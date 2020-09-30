@@ -25,7 +25,7 @@ help:
 .init:
 	test -d .venv || /usr/bin/python3 -m venv .venv
 	. .venv/bin/activate && pip install -U wheel
-	. .venv/bin/activate && pip install -U pyflakes pylint pytest twine
+	. .venv/bin/activate && pip install -U pyflakes pylint pytest collective.checkdocs twine
 	. .venv/bin/activate && pip install -U -e .
 	touch .init
 
@@ -33,6 +33,7 @@ init: .init
 
 lint: init
 	$(PYFLAKES) */*.py
+	$(PYTHON) setup.py checkdocs
 
 check test: init lint
 	$(PYTEST) $(T) tests
