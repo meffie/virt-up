@@ -483,15 +483,6 @@ class Instance:
                     pass
 
     @classmethod
-    def images(cls):
-        """
-        List the available build() image names.
-        """
-        settings = Settings()
-        for name, values in settings.images.items():
-            yield (name, values.get('desc', ''), values.get('arch', ''))
-
-    @classmethod
     def exists(cls, name):
         """
         Returns true if domain already exists.
