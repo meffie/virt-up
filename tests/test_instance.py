@@ -6,6 +6,7 @@ from virt_up.instance import xdg_data_home
 from virt_up.instance import query_storage_pool
 from virt_up.instance import MacAddresses
 from virt_up.instance import Creds
+from virt_up.instance import Settings
 from virt_up.instance import Instance
 
 def remove(path):
@@ -97,4 +98,21 @@ def test_create(name):
     assert('uid=0' in output)
     # cleanup
     template.delete()
+    instance.delete()
+
+def test_address_source_arp():
+    template = 'generic-centos-8'
+    name = f'_test_virt_up_instance_arp-{template}'
+
+    settings = Settings(template)
+    settings.address_source = 'arp'
+
+    instance = Instance.build(name, template=template, settings=settings)
+    assert(instance)
+    assert(instance.meta['address_source'] == 'arp')
+    assert(instance._arp_table())
+    instance.meta.pop('address', None) # Flush cached address.
+    address = instance.address()
+    assert(address)
+    # cleanup
     instance.delete()

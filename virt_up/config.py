@@ -19,7 +19,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 """
-virt-up built-in settings.
+Built-in virt-up settings.
 """
 
 #
@@ -29,8 +29,9 @@ SETTINGS = """
 [site]
 pool = default
 username = virt
-image-format = qcow2
 dns-domain =
+address-source = agent
+image-format = qcow2
 virt-builder-args =
 virt-sysprep-args =
 virt-install-args =

@@ -94,6 +94,7 @@ class Settings:
         self.username = self.site.get('username', 'virt')
         self.image_format = self.site.get('image-format', 'qcow2')
         self.dns_domain = self.site.get('dns-domain', '')
+        self.address_source = self.site.get('address-source', 'agent')
 
         # Load template definitions.
         self.templates = self._load('templates', TEMPLATES)
@@ -109,6 +110,7 @@ class Settings:
             self.template_name = template
             self.os_version = self.template.get('os-version')
             self.os_variant = self.template.get('os-variant')
+            self.address_source = self.template.get('address-source', self.address_source)
 
     def _load(self, name, defaults):
         system_file = f'/etc/virt-up/{name}.cfg'
@@ -397,20 +399,20 @@ class Instance:
                         lines.append(f'    {i:8}  {mac:17}  {aip}')
         return '\n'.join(lines)
 
-    def address(self, source=None):
+    def _address_from_ia(self, source='agent'):
         """
-        Get the public IPv4 address for login.
+        Attempt to get the instance address from the domain interface-addresses.
         """
-        address = self.meta.get('address')
-        if address:
-            return address
-
-        if not self.domain.isActive():
-            self.start()
+        sources = {
+            'agent': libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT,
+            'lease': libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE,
+        }
+        try:
+            source = sources[source]
+        except KeyError:
+            raise ValueError(f"Unsupported interface-address source '{source}.")
 
         log.info(f"Waiting for instance '{self.name}' address.")
-        if source is None:
-            source = libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT
         last_ia_str = None
         addresses = []
         for retries in range(120, -1, -1):
@@ -433,7 +435,59 @@ class Instance:
 
         if not addresses:
             raise LookupError(f"Unable to find address for instance '{self.name}'.")
-        address = addresses[0]
+        return addresses[0] # return the first one found.
+
+    def _arp_table(self):
+        """
+        Retrieve the arp table.
+        """
+        arp = {}
+        with open('/proc/net/arp') as fp:
+            for line in fp:
+                if line.startswith('IP address'):
+                    continue
+                address, _, _, mac, _, _ = line.split()
+                arp[mac] = address
+        return arp
+
+    def _address_from_arp(self):
+        """
+        Attempt to retreive the instance address from the arp cache.
+        """
+        address = None
+        mac = self.mac()
+        for retries in range(120, -1, -1):
+            arp = self._arp_table()
+            address = arp.get(mac)
+            if address:
+                break
+            if retries > 0:
+                suffix = 'ies' if retries > 1 else 'y'
+                log.debug(f"Waiting for instance '{self.name}' address in arp cache; {retries} retr{suffix} left.")
+                time.sleep(2)
+        return address
+
+    def address(self):
+        """
+        Get the public IPv4 address for login.
+        """
+        address = self.meta.get('address')
+        if address:
+            return address
+
+        if not self.domain.isActive():
+            self.start()
+
+        address_source = self.meta.get('address_source', 'agent')
+        if address_source == 'agent':
+            address = self._address_from_ia(source='agent')
+        elif address_source == 'lease':
+            address = self._address_from_ia(source='lease')
+        elif address_source == 'arp':
+            address = self._address_from_arp()
+        else:
+            raise ValueError(f"Invalid address_source '{address_source}' in instance '{self.name}'.")
+
         self.meta['address'] = address
         self._write_meta()
 
@@ -502,6 +556,7 @@ class Instance:
               name,
               template=None, # defaults to <name>
               prefix='',
+              settings=None,
               memory=512,
               size=None,
               vcpus=1,
@@ -520,7 +575,8 @@ class Instance:
             log.info(f"Instance '{name}' already exists.")
             return Instance(name)
 
-        settings = Settings(template)
+        if settings is None:
+            settings = Settings(template)
         maddrs = MacAddresses()
         path = query_storage_pool(settings.pool)
         image = f'{path}/{name}.{settings.image_format}'
@@ -589,6 +645,7 @@ class Instance:
             'graphics': graphics,
             'root': vars(root_creds),
             'user': vars(user_creds),
+            'address_source': settings.address_source,
         }
         instance = Instance(name, meta=meta)
         maddrs.update(name, instance.mac())
@@ -596,7 +653,13 @@ class Instance:
 
         return instance
 
-    def clone(self, target, memory=None, size=None, vcpus=None, graphics=None):
+    def clone(self,
+            target,
+            settings=None,
+            memory=None,
+            size=None,
+            vcpus=None,
+            graphics=None):
         """
         Clone this instance to a new target instance.
 
@@ -613,7 +676,8 @@ class Instance:
             if not element in self.meta:
                 raise LookupError(f"Element '{element}' is missing in '{self.name}' meta data.")
 
-        settings = Settings(self.meta['template'])
+        if settings is None:
+            settings = Settings(self.meta['template'])
         maddrs = MacAddresses()
         path = query_storage_pool(settings.pool)
 
