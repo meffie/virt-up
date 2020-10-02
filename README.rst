@@ -15,6 +15,13 @@ created automatically. The login user is given sudo access. Connection
 information is stored in a json meta data file for each virtual machine
 created.
 
+Normally you should run **virt-up** as a regular user, not root.
+
+By default, **virt-up** will create image files in the ``default`` libvirt
+storage pool (``/var/lib/libvirt/images``). See the ``pool`` option Settings to
+change this.  Be sure you have read and write access to the configured libvirt
+storage pool.
+
 System requirements
 ===================
 
@@ -30,37 +37,104 @@ Usage
 ::
 
     usage: virt-up [--name] <name> [--template <template>] [options]
-                --list [--all] | --list-templates
-                --login [--name] <name> [--command "<command>"]
-                --delete [--name] <name> | --delete --all
-
+                   --list [--all] | --list-templates
+                   --login [--name] <name> [--command "<command>"]
+                   --delete [--name] <name> | --delete --all
+    
     positional arguments:
-    <name>                instance name
-
+      <name>                instance name
+    
     optional arguments:
-    -h, --help            show this help message and exit
-    --version             show program's version number and exit
-    --list                list instances
-    --list-templates      list template names
-    --delete              delete the instance
-    -t <template>, --template <template>
+      -h, --help            show this help message and exit
+      --version             show program's version number and exit
+      --list                list instances
+      --list-templates      list template names
+      --delete              delete the instance
+      -t <template>, --template <template>
                             template name (default: <name>)
-    --size <size>         instance disk size (default: image size)
-    --memory <memory>     instance memory (default: 512)
-    --vcpus <vcpus>       instance vcpus (default: 1)
-    --graphics <graphics>
+      --size <size>         instance disk size (default: image size)
+      --memory <memory>     instance memory (default: 512)
+      --vcpus <vcpus>       instance vcpus (default: 1)
+      --graphics <graphics>
                             instance graphics type (default: none)
-    --command <command>   --login ssh command
-    --no-clone            build template instance only
-    --all                 include template instances
-    --images              show available images
-    --quiet               show less output
-    --debug               show debug tracing
+      --command <command>   --login ssh command
+      --no-clone            build template instance only
+      --all                 include template instances
+      --yes                 answer yes to interactive questions
+      --quiet               show less output
+      --debug               show debug tracing
+
 
 Settings
 ========
 
-**virt-up** will load settings from an INI formatted file
-``/etc/virt-up/settings`` and ``$HOME/.config/virt-up/settings``.
+**virt-up** reads settings for INI formatted configuration files.
+The following files are read in order, if they exist.
 
-See ``virt_up/config.py`` for available setting names and default values.
+* ``/etc/virt-up/settings.cfg``
+* ``$XDG_CONFIG_HOME/virt-up/settings.cfg`` (``$XDG_CONFIG_HOME`` is ``$HOME/.config`` if not set)
+
+The ``settings.cfg`` should contain one section called ``[site]``. The following fields are supported:
+
+pool
+  The libvirt storage pool to write images. (default: ``default``)
+
+username
+  The username of the user account created by **virt-up** when creating
+  new template instances (default: ``virt``)
+
+dns-domain
+  The DNS domain used for new template instance hostnames. (default: None)
+
+address-source = agent
+  The method used to detect the instance IP address. Supported values are
+  ``agent``, ``lease``, and ``arp``. (default: ``agent``)
+
+image-format = qcow2
+  The image format. Supported values are ``qcow2``, and ``raw``. (default: ``qcow2``)
+
+virt-builder-args
+  Extra arguments for ``virt-builder``. (default: None)
+
+virt-sysprep-args
+  Extra arguments for ``virt-sysprep``. (default: None)
+
+virt-install-args =
+  Extra arguments for ``virt-install``. (default: None)
+
+Template Defintions
+===================
+
+Additional OS types can be created with **virt-up** by providing template defintions
+in the following files:
+
+* ``/etc/virt-up/templates.cfg``
+* ``$XDG_CONFIG_HOME/virt-up/templates.cfg`` (``$XDG_CONFIG_HOME`` is ``$HOME/.config`` if not set)
+
+The ``templates.cfg`` files are INI formatted text files. Provide one section
+for each template definition. The section name is the template name used in
+virt-up ``--template`` option. The following fields are supported:
+
+desc
+  A text description, show by ``--list-templates``.
+
+os-version
+  The **virt-builder** ``<os_version>`` name. See ``virt-builder =-list`` for available names.
+
+os-type
+  The **virt-install** ``--os-type``
+
+os-variant
+  The **virt-install** ``--os-variant``. See ``osquery-info os`` for available names.
+
+arch
+  The target architecture.
+
+virt-builder-args
+  Template specific extra arguments for ``virt-builder``. (default: None)
+
+virt-sysprep-args
+  Template specific extra arguments for ``virt-sysprep``. (default: None)
+
+virt-install-args =
+  Template specific extra arguments for ``virt-install``. (default: None)
