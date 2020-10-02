@@ -80,10 +80,18 @@ def delete(args):
             instance = Instance(args.name)
             instance.delete()
     else:
-        for name in Instance.list(clones_only=False):
-            if Instance.exists(name):
-                instance = Instance(name)
-                instance.delete()
+        names = list(Instance.list(clones_only=False))
+        if names:
+            if args.yes:
+                answer = 'yes'
+            else:
+                sys.stdout.writelines(('About to delete instances:\n', '\n'.join(names), '\n'))
+                answer = input('continue? [y/n] > ').lower()
+            if answer in ('y', 'yes'):
+                for name in names:
+                    if Instance.exists(name):
+                        instance = Instance(name)
+                        instance.delete()
 
 def login(args):
     """
@@ -151,7 +159,7 @@ def main():
     parser.add_argument('--command', metavar='<command>', help='--login ssh command')
     parser.add_argument('--no-clone', action='store_true', help='build template instance only')
     parser.add_argument('--all', action='store_true', help='include template instances')
-    parser.add_argument('--images', action='store_true', help='show available images')
+    parser.add_argument('--yes', action='store_true', help='answer yes to interactive questions')
     parser.add_argument('--quiet', action='store_true', help='show less output')
     parser.add_argument('--debug', action='store_true', help='show debug tracing')
 
