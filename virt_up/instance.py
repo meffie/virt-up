@@ -579,6 +579,9 @@ class Instance:
             settings = Settings(template)
         maddrs = MacAddresses()
         path = query_storage_pool(settings.pool)
+        if not os.access(path, os.R_OK | os.W_OK):
+            raise PermissionError(f"Read and write access is required for path '{path}'.")
+
         image = f'{path}/{name}.{settings.image_format}'
 
         # Sanity checks.
@@ -680,6 +683,8 @@ class Instance:
             settings = Settings(self.meta['template'])
         maddrs = MacAddresses()
         path = query_storage_pool(settings.pool)
+        if not os.access(path, os.R_OK | os.W_OK):
+            raise PermissionError(f"Read and write access is required for path '{path}'.")
 
         # Ensure we are stopped.
         self.stop()
