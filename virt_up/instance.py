@@ -72,7 +72,6 @@ ssh = sh.Command('ssh')
 ssh_keygen = sh.Command('ssh-keygen').bake(_out=logout, _err=logerr)
 virt_builder = sh.Command('virt-builder').bake(_out=logout, _err=logerr)
 virt_install = sh.Command('virt-install').bake(_out=logout, _err=logerr)
-virt_clone = sh.Command('virt-clone').bake(_out=logout, _err=logerr)
 virt_sysprep = sh.Command('virt-sysprep').bake(_out=logout, _err=logerr)
 
 # Avoid writing "domain not found" errors to the console.
