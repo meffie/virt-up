@@ -537,9 +537,9 @@ class Instance:
                     pass
 
     @classmethod
-    def exists(cls, name):
+    def _domain_exists(cls, name):
         """
-        Returns true if domain already exists.
+        Returns true if the domain already exists.
         """
         assert(name)
         domain = None
@@ -550,6 +550,15 @@ class Instance:
                 if e.get_error_code() != libvirt.VIR_ERR_NO_DOMAIN:
                     raise e
         return (not domain is None)
+
+    @classmethod
+    def exists(cls, name):
+        """
+        Returns true if the instance already exists, that is
+        the domain and metadata file both exist.
+        """
+        metafile = f'{xdg_data_home}/virt-up/instance/{name}.json'
+        return os.path.exists(metafile) and cls._domain_exists(name)
 
     @classmethod
     def build(cls,
@@ -589,9 +598,10 @@ class Instance:
             raise LookupError(f"virt-builder <os_version> is not defined for '{template}'.")
         if not settings.os_variant:
             raise LookupError(f"virt-install <os_variant> is not defined for '{template}'.")
-
-        # Remove old image file, if one exists.
-        rm_f(image)
+        if cls._domain_exists(name):
+            raise FileExistsError(f"Domain '{name}' without metadata already exists.")
+        if os.path.exists(image):
+            raise FileExistsError(f"Image file '{image}' already exists.")
 
         # Generate the user creditials for login.
         user = settings.username
@@ -674,6 +684,9 @@ class Instance:
             log.info(f"Target instance '{target}' already exists.")
             return Instance(target)
 
+        if Instance._domain_exists(target):
+            raise FileExistsError(f"Domain '{target}' without metadata already exists.")
+
         # Required meta data elements needed to clone.
         for element in ('os_version', 'os_variant', 'disk'):
             if not element in self.meta:
@@ -692,6 +705,9 @@ class Instance:
         # Setup cp arguments.
         source_image = self.meta['disk']
         target_image = f'{path}/{target}.{settings.image_format}'
+        if os.path.exists(target_image):
+            raise FileExistsError(f"Image file '{target_image}' already exists.")
+
         extra_args = settings.extra_args('cp')
 
         log.info(f"Cloning '{source_image}' to '{target_image}'.")
