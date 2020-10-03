@@ -66,6 +66,12 @@ def logerr(line):
     if line:
         log.error(line)
 
+# The sh debug logging swamps the log file, so back off.
+def _adjust_sh_log():
+    logger = logging.getLogger(sh.__name__)
+    if logger.getEffectiveLevel() <= logging.DEBUG:
+        logger.setLevel(logging.INFO)
+
 # Commands
 cp = sh.Command('cp').bake(_out=logout, _err=logerr)
 ssh = sh.Command('ssh')
@@ -572,6 +578,7 @@ class Instance:
         """
         Build an instance with virt-builder and virt-install.
         """
+        _adjust_sh_log()
         if name is None:
             raise ValueError('<name> is required.')
         if not template:
@@ -678,6 +685,7 @@ class Instance:
         This instance will be stopped if it is running. The image will
         be cloned and virt-sysprep'd for the new target instance.
         """
+        _adjust_sh_log()
         assert(target)
         if self.exists(target):
             log.info(f"Target instance '{target}' already exists.")
