@@ -275,9 +275,16 @@ class Instance:
         self._read_meta()
 
     def _update_meta(self, meta):
+        changed = []
         for key in meta:
-            self.meta[key] = meta[key]
-        self._write_meta()
+            value = meta[key]
+            if not key in self.meta or self.meta[key] != value:
+                self.meta[key] = value
+                changed.append(key)
+        if changed:
+            changed = ', '.join(changed)
+            log.debug(f"Updating metadata fields: {changed}")
+            self._write_meta()
 
     def _read_meta(self):
         try:
@@ -287,8 +294,10 @@ class Instance:
             pass
 
     def _write_meta(self):
+        log.debug(f"Writing metafile '{self.metafile}'.")
         mkdir_p(os.path.dirname(self.metafile))
-        with open(self.metafile, 'w') as fp:
+        flags = os.O_CREAT | os.O_TRUNC | os.O_RDWR
+        with os.fdopen(os.open(self.metafile, flags, 0o600), 'w') as fp:
             json.dump(self.meta, fp, indent=4)
 
     def mac(self):
@@ -493,9 +502,7 @@ class Instance:
         else:
             raise ValueError(f"Invalid address_source '{address_source}' in instance '{self.name}'.")
 
-        self.meta['address'] = address
-        self._write_meta()
-
+        self._update_meta({'address': address})
         log.info(f"Instance '{self.name}' has address '{address}'.")
         return address
 
@@ -531,7 +538,7 @@ class Instance:
                 name = domain.name()
                 metafile = f'{xdg_data_home}/virt-up/instance/{name}.json'
                 try:
-                    with open(metafile) as fp:
+                    with open(metafile, 'r') as fp:
                         meta = json.load(fp)
                     if clones_only:
                         if 'cloned' in meta:
