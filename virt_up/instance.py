@@ -792,7 +792,7 @@ class Instance:
         """
         self.start()
         self.meta.pop('address', None) # Flush our cached address.
-        address = self.address() # Wait until booted.
+        address = self.address()
         user = self.meta['user']['username']
         ssh_identity = self.meta['user']['ssh_identity']
         args = [
@@ -804,6 +804,8 @@ class Instance:
             '-o', 'LogLevel=ERROR',
             f'{user}@{address}',
         ]
+
+        self.wait_for_port(22)  # Wait until ssh port is ready.
         if not command:
             args.insert(0, ssh.__name__) # Required for execv.
             os.execv(ssh.__name__, args) # Drop into interactive shell, never to return.

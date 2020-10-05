@@ -53,6 +53,30 @@ virt-builder-args = --firstboot-command "systemctl enable serial-getty@ttyS0.ser
                     --selinux-relabel
 virt-sysprep-args = --run-command "restorecon /etc/machine-info"
 
+[generic-centos-7]
+desc = CentOS 7.8
+os-version = centos-7.8
+os-type = linux
+os-variant = centos7.0
+arch = x86_64
+virt-builder-args = --firstboot-command "systemctl enable serial-getty@ttyS0.service"
+                    --firstboot-command "systemctl start serial-getty@ttyS0.service"
+                    --install "sudo,python3"
+                    --selinux-relabel
+virt-sysprep-args = --run-command "restorecon /etc/machine-info"
+
+[generic-fedora-32]
+desc = Fedora 32
+os-version = fedora-32
+os-type = linux
+os-variant = fedora32
+arch = x86_64
+# --install 'qemu-guest-agent' hangs. fall back to arp for now.
+address-source = arp
+virt-builder-args = --firstboot-command "systemctl enable serial-getty@ttyS0.service"
+                    --firstboot-command "systemctl start serial-getty@ttyS0.service"
+                    --selinux-relabel
+virt-sysprep-args = --run-command "restorecon /etc/machine-info"
 [generic-debian-10]
 desc = Debian 10 (buster)
 os-version = debian-10
@@ -61,4 +85,33 @@ os-variant =  debian10
 arch = x86_64
 virt-builder-args = --install "sudo,qemu-guest-agent"
 virt-sysprep-args = --run-command "/usr/sbin/dpkg-reconfigure -f noninteractive openssh-server"
+
+[generic-debian-9]
+desc = Debian 9 (stretch)
+os-version = debian-9
+os-type = linux
+os-variant =  debian9
+arch = x86_64
+virt-builder-args = --install "sudo,qemu-guest-agent"
+virt-sysprep-args = --run-command "/usr/sbin/dpkg-reconfigure -f noninteractive openssh-server"
+
+[generic-ubuntu-18]
+desc = Ubuntu 18.04
+os-version = ubuntu-18.04
+os-type = linux
+os-variant =  ubuntu18.04
+arch = x86_64
+virt-builder-args = --install "sudo,policykit-1,qemu-guest-agent"
+virt-sysprep-args = --run-command "/usr/sbin/dpkg-reconfigure -f noninteractive openssh-server"
+virt-install-args = --channel unix,mode=bind,path=/var/lib/libvirt/qemu/guest01.agent,target_type=virtio,name=org.qemu.guest_agent.0
+
+[generic-opensuse-42]
+desc = openSUSE Leap 42.1
+os-version = opensuse-42.1
+os-type = linux
+os-variant = opensuse42.1
+arch = x86_64
+virt-builder-args = --install "sudo,qemu-guest-agent"
+virt-sysprep-args =
+virt-install-args = --channel unix,mode=bind,path=/var/lib/libvirt/qemu/guest01.agent,target_type=virtio,name=org.qemu.guest_agent.0
 """

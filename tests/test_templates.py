@@ -18,28 +18,40 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from virt_up.instance import Connection
+import pytest
 
-def test_ping():
-    count = Connection.opens
-    assert(Connection.opens == Connection.closes)
-    with Connection() as c:
-        assert(Connection.opens == (count + 1))
-        assert(Connection.closes == count)
-        version = c.getVersion()
-        assert(version)
-    assert(Connection.opens == (count + 1))
-    assert(Connection.opens == Connection.closes)
+from virt_up.instance import Instance
 
-def test_close_on_exception():
-    count = Connection.opens
-    assert(Connection.opens == Connection.closes)
+@pytest.mark.parametrize('name', [
+    'generic-centos-7',
+    'generic-centos-8',
+    'generic-debian-9',
+    'generic-debian-10',
+    'generic-fedora-32',
+    'generic-opensuse-42',
+    'generic-ubuntu-18'])
+def test_up(name):
+    options = {}
+    template = None
+    instance = None
     try:
-        with Connection():
-            assert(Connection.opens == (count + 1))
-            assert(Connection.closes == count)
-            raise ValueError()
-    except ValueError:
-        pass
-    assert(Connection.opens == (count + 1))
-    assert(Connection.opens == Connection.closes)
+        template = Instance.build(name, name, prefix='_TEST_TEMPLATE-', **options)
+        assert(template)
+        instance = template.clone(name, **options)
+        assert(instance)
+        address = instance.address()
+        assert(address)
+        output = instance.login(command='sudo -n id')
+        assert('uid=0' in output)
+    finally:
+        # cleanup
+        try:
+            if template:
+                template.delete()
+        except:
+            pass
+        try:
+            if instance:
+                instance.delete()
+        except:
+            pass
