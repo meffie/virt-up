@@ -39,7 +39,7 @@ check test: init lint
 	$(PYTEST) $(T) tests
 
 release: init
-	@if [ "x$(VERSION)" = "x" ]; then echo "usage: make release VERSION=<version>"; exit 1; fi
+	@if [ "x$(VERSION)" = "x" ]; then echo "usage: make release VERSION=<major>.<minor>.<patch>"; exit 1; fi
 	@if git tag --list | grep -q "^v$(VERSION)$$"; then echo "Version $(VERSION) already exists."; exit 1; fi
 	sed -i -e "s/__version__ = '.*'/__version__ = '$(VERSION)'/" virt_up/__init__.py
 	git add virt_up/__init__.py
