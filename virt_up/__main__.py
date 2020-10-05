@@ -85,8 +85,9 @@ def delete(args):
             if args.yes:
                 answer = 'yes'
             else:
-                sys.stdout.writelines(('About to delete instances:\n', '\n'.join(names), '\n'))
-                answer = input('continue? [y/n] > ').lower()
+                names_str = ', '.join(names)
+                sys.stdout.write(f'About to delete instances: {names_str}\n')
+                answer = input('Continue? [y/n] > ').lower()
             if answer in ('y', 'yes'):
                 for name in names:
                     if Instance.exists(name):
