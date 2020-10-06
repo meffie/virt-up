@@ -623,6 +623,8 @@ class Instance:
 
         # Setup virt-builder arguments.
         extra_args = settings.extra_args('virt-builder')
+        if size:
+            extra_args.extend(['--size', size])
 
         log.info(f"Building image file '{image}'.")
         virt_builder(
@@ -673,6 +675,8 @@ class Instance:
             'user': vars(user_creds),
             'address_source': settings.address_source,
         }
+        if size:
+            meta['size'] = size
         instance = Instance(name, meta=meta)
         maddrs.update(name, instance.mac())
         instance.address() # Wait for address to be assigned.
