@@ -51,7 +51,7 @@ virt-builder-args = --firstboot-command "systemctl enable serial-getty@ttyS0.ser
                     --firstboot-command "systemctl start serial-getty@ttyS0.service"
                     --install "sudo,python3"
                     --selinux-relabel
-virt-sysprep-args = --run-command "restorecon /etc/machine-info"
+virt-sysprep-args = --selinux-relabel
 
 [generic-centos-7]
 desc = CentOS 7.8
@@ -63,7 +63,7 @@ virt-builder-args = --firstboot-command "systemctl enable serial-getty@ttyS0.ser
                     --firstboot-command "systemctl start serial-getty@ttyS0.service"
                     --install "sudo,python3"
                     --selinux-relabel
-virt-sysprep-args = --run-command "restorecon /etc/machine-info"
+virt-sysprep-args = --selinux-relabel
 
 [generic-fedora-32]
 desc = Fedora 32
@@ -76,7 +76,7 @@ address-source = arp
 virt-builder-args = --firstboot-command "systemctl enable serial-getty@ttyS0.service"
                     --firstboot-command "systemctl start serial-getty@ttyS0.service"
                     --selinux-relabel
-virt-sysprep-args = --run-command "restorecon /etc/machine-info"
+virt-sysprep-args = --selinux-relabel
 [generic-debian-10]
 desc = Debian 10 (buster)
 os-version = debian-10
