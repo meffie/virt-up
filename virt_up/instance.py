@@ -76,6 +76,7 @@ def _adjust_sh_log():
 cp = sh.Command('cp').bake(_out=logout, _err=logerr)
 ssh = sh.Command('ssh')
 ssh_keygen = sh.Command('ssh-keygen').bake(_out=logout, _err=logerr)
+qemu_img = sh.Command('qemu-img').bake(_out=logout, _err=logerr)
 virt_builder = sh.Command('virt-builder').bake(_out=logout, _err=logerr)
 virt_install = sh.Command('virt-install').bake(_out=logout, _err=logerr)
 virt_sysprep = sh.Command('virt-sysprep').bake(_out=logout, _err=logerr)
@@ -717,19 +718,18 @@ class Instance:
         if not os.access(path, os.R_OK | os.W_OK):
             raise PermissionError(f"Read and write access is required for path '{path}'.")
 
-        # Ensure we are stopped.
-        self.stop()
-
-        # Setup cp arguments.
+        # Clone the image.
         source_image = self.meta['disk']
         target_image = f'{path}/{target}.{settings.image_format}'
         if os.path.exists(target_image):
             raise FileExistsError(f"Image file '{target_image}' already exists.")
-
-        extra_args = settings.extra_args('cp')
-
+        self.stop()  # Ensure we are stopped before cloning.
         log.info(f"Cloning '{source_image}' to '{target_image}'.")
-        cp(*extra_args, source_image, target_image)
+        if settings.image_format == 'qcow2':
+            qemu_img.create('-f', 'qcow2', '-F', 'qcow2', '-b', source_image, target_image)
+        else:
+            extra_args = settings.extra_args('cp')
+            cp(*extra_args, source_image, target_image)
 
         # Setup virt-sysprep args.
         if settings.dns_domain:
