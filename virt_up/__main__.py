@@ -118,6 +118,12 @@ def create(args):
         args.template = args.name
 
     options = {}
+    if args.root_password:
+        options['root_password'] = args.root_password
+    if args.user:
+        options['user'] = args.user
+    if args.password:
+        options['password'] = args.password
     if args.size:
         options['size'] = args.size
     if args.memory:
@@ -152,6 +158,9 @@ def main():
     group.add_argument('-n', '--name', dest='name_flag', metavar='<name>', help=argparse.SUPPRESS) # Optional --name flag
 
     parser.add_argument('-t', '--template', metavar='<template>', help='template name (default: <name>)')
+    parser.add_argument('--root-password', metavar='<root-password>', help='root password (default: random)')
+    parser.add_argument('--user', metavar='<user>', help='username (default: virt)')
+    parser.add_argument('--password', metavar='<password>', help='password (default: random)')
     parser.add_argument('--size', metavar='<size>', help='instance disk size (default: image size)')
     parser.add_argument('--memory', metavar='<memory>', help='instance memory (default: 512)')
     parser.add_argument('--vcpus', metavar='<vcpus>', help='instance vcpus (default: 1)')

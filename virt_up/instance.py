@@ -581,6 +581,9 @@ class Instance:
               template=None, # defaults to <name>
               prefix='',
               settings=None,
+              root_password=None,
+              user=None,
+              password=None,
               memory=512,
               size=None,
               vcpus=1,
@@ -620,9 +623,10 @@ class Instance:
             raise FileExistsError(f"Image file '{image}' already exists.")
 
         # Generate the user creditials for login.
-        user = settings.username
-        root_creds = Creds('root')
-        user_creds = Creds(user)
+        if not user:
+            user = settings.username
+        root_creds = Creds('root', password=root_password)
+        user_creds = Creds(user, password=password)
 
         # Setup virt-builder arguments.
         extra_args = settings.extra_args('virt-builder')
@@ -693,7 +697,8 @@ class Instance:
             memory=None,
             size=None,
             vcpus=None,
-            graphics=None):
+            graphics=None,
+            **kwargs):
         """
         Clone this instance to a new target instance.
 
