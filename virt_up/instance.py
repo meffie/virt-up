@@ -518,7 +518,9 @@ class Instance:
                 s.settimeout(2)
                 s.connect((address, int(port)))
                 return True
-            except:
+            except Exception as e:
+                if str(e) == "[Errno 111] Connection refused":
+                    time.sleep(2) 
                 pass
             finally:
                 try:
