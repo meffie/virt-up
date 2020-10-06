@@ -521,7 +521,6 @@ class Instance:
             except Exception as e:
                 if str(e) == "[Errno 111] Connection refused":
                     time.sleep(2) 
-                pass
             finally:
                 try:
                     s.shutdown(socket.SHUT_RDWR)
