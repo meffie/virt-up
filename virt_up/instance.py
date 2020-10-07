@@ -780,6 +780,7 @@ class Instance:
             '--graphics', graphics,
             '--os-variant', self.meta['os_variant'],
             '--noautoconsole',
+            '--autostart',
             *optional_args,
             *extra_args)
 
