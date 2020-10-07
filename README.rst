@@ -1,8 +1,8 @@
 virt-up
 =======
 
-**virt-up** is a command line tool for quickly creating virtual machines
-on a local KVM hypervisor using **virt-builder**, **virt-sysprep**,
+**virt-up** is a command line tool for creating virtual machines
+quickly on a local KVM hypervisor using **virt-builder**, **virt-sysprep**,
 and **virt-install**.
 
 Virtual machines are created from existing digitally signed OS images, which
@@ -25,11 +25,10 @@ storage pool.
 System requirements
 ===================
 
-* Python 3.6
-* Local KVM (or XEN) libvirt hypervisor
-* Python libvirt
-* libguestfs-tools: virt-builder, virt-sysprep
-* virt-manager: virt-install
+* Python 3.6 or better
+* Local KVM hypervisor
+* Python libvirt package
+* ``qemu-img``, ``virt-builder``, ``virt-sysprep``, ``virt-install``
 
 Usage
 =====
@@ -52,6 +51,11 @@ Usage
       --delete              delete the instance
       -t <template>, --template <template>
                             template name (default: <name>)
+      --root-password <root-password>
+                            root password (default: random)
+      --user <user>         username (default: virt)
+      --password <password>
+                            password (default: random)
       --size <size>         instance disk size (default: image size)
       --memory <memory>     instance memory (default: 512)
       --vcpus <vcpus>       instance vcpus (default: 1)
@@ -86,11 +90,11 @@ username
 dns-domain
   The DNS domain used for new template instance hostnames. (default: None)
 
-address-source = agent
+address-source
   The method used to detect the instance IP address. Supported values are
   ``agent``, ``lease``, and ``arp``. (default: ``agent``)
 
-image-format = qcow2
+image-format
   The image format. Supported values are ``qcow2``, and ``raw``. (default: ``qcow2``)
 
 virt-builder-args
@@ -101,6 +105,7 @@ virt-sysprep-args
 
 virt-install-args =
   Extra arguments for ``virt-install``. (default: None)
+
 
 Template Defintions
 ===================
