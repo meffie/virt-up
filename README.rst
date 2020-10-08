@@ -92,7 +92,7 @@ dns-domain
 
 address-source
   The method used to detect the instance IP address. Supported values are
-  ``agent``, ``lease``, and ``arp``. (default: ``agent``)
+  ``agent``, ``lease``, ``arp``, ``dns``. (default: ``agent``)
 
 image-format
   The image format. Supported values are ``qcow2``, and ``raw``. (default: ``qcow2``)
@@ -103,7 +103,7 @@ virt-builder-args
 virt-sysprep-args
   Extra arguments for ``virt-sysprep``. (default: None)
 
-virt-install-args =
+virt-install-args
   Extra arguments for ``virt-install``. (default: None)
 
 

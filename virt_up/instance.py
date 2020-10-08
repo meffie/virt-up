@@ -482,6 +482,28 @@ class Instance:
                 time.sleep(2)
         return address
 
+    def _address_from_dns(self):
+        """
+        Attempt to retreive the instance address from dns. Assumes the dns is automatically updated by
+        the dhcp server with the hostname configured on the guests.
+        """
+        address = None
+        hostname = self.meta.get('hostname')
+        if not hostname:
+            raise LookupError(f"hostname is missing in instance '{self.name}' meta file.")
+        for retries in range(120, -1, -1):
+            try:
+                ai = socket.getaddrinfo(hostname, 22, family=socket.AF_INET, proto=socket.IPPROTO_TCP)
+                if ai:
+                    address = ai[0][4][0]
+                if address:
+                    break
+            except:
+                suffix = 'ies' if retries > 1 else 'y'
+                log.debug(f"Waiting for instance '{self.name}' address from dns lookup; {retries} retr{suffix} left.")
+                time.sleep(2)
+        return address
+
     def address(self):
         """
         Get the public IPv4 address for login.
@@ -493,13 +515,15 @@ class Instance:
         if not self.domain.isActive():
             self.start()
 
-        address_source = self.meta.get('address_source', 'agent')
+        address_source = self.meta.get('address-source', 'agent')
         if address_source == 'agent':
             address = self._address_from_ia(source='agent')
         elif address_source == 'lease':
             address = self._address_from_ia(source='lease')
         elif address_source == 'arp':
             address = self._address_from_arp()
+        elif address_source == 'dns':
+            address = self._address_from_dns()
         else:
             raise ValueError(f"Invalid address_source '{address_source}' in instance '{self.name}'.")
 
@@ -628,6 +652,10 @@ class Instance:
         user_creds = Creds(user, password=password)
 
         # Setup virt-builder arguments.
+        if settings.dns_domain:
+            hostname = f'{name}.{settings.dns_domain}'
+        else:
+            hostname = name
         extra_args = settings.extra_args('virt-builder')
         if size:
             extra_args.extend(['--size', size])
@@ -637,6 +665,7 @@ class Instance:
             settings.os_version,
             '--output', image,
             '--format', settings.image_format,
+            '--hostname', hostname,
             '--root-password', f'password:{root_creds.password}',
             '--run-command', 'ssh-keygen -A',
             '--run-command', f'id -u {user} || useradd -m -s /bin/bash -p "" {user}',
@@ -674,13 +703,14 @@ class Instance:
             'created': str(datetime.datetime.now()),
             'os_version': settings.os_version,
             'os_variant': settings.os_variant,
+            'hostname': hostname,
             'disk': image,
             'memory': memory,
             'vcpus': vcpus,
             'graphics': graphics,
             'root': vars(root_creds),
             'user': vars(user_creds),
-            'address_source': settings.address_source,
+            'address-source': settings.address_source,
         }
         if size:
             meta['size'] = size
@@ -789,6 +819,7 @@ class Instance:
         meta = self.meta.copy()
         meta.pop('address', None)  # Remove the parent's address.
         meta['cloned'] = str(datetime.datetime.now())
+        meta['hostname'] = hostname
         meta['disk'] = target_image
         meta['memory'] = memory
         meta['vcpus'] = vcpus
