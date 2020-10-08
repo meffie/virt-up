@@ -499,6 +499,8 @@ class Instance:
                 if address:
                     break
             except:
+                pass
+            if retries > 0:
                 suffix = 'ies' if retries > 1 else 'y'
                 log.debug(f"Waiting for instance '{self.name}' address from dns lookup; {retries} retr{suffix} left.")
                 time.sleep(2)
@@ -542,9 +544,8 @@ class Instance:
                 s.settimeout(2)
                 s.connect((address, int(port)))
                 return True
-            except Exception as e:
-                if str(e) == "[Errno 111] Connection refused":
-                    time.sleep(2)
+            except:
+                pass
             finally:
                 try:
                     s.shutdown(socket.SHUT_RDWR)
@@ -554,6 +555,7 @@ class Instance:
             if retries > 0:
                 suffix = 'ies' if retries > 1 else 'y'
                 log.debug(f"Waiting for open port '{port}' on address '{address}'; {retries} retr{suffix} left.")
+                time.sleep(2)
 
         raise LookupError(f"Unable to connect to '{address}:{port}'.")
 
