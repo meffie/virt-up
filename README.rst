@@ -39,10 +39,10 @@ Usage
                    --list [--all] | --list-templates
                    --login [--name] <name> [--command "<command>"]
                    --delete [--name] <name> | --delete --all
-    
+
     positional arguments:
       <name>                instance name
-    
+
     optional arguments:
       -h, --help            show this help message and exit
       --version             show program's version number and exit
