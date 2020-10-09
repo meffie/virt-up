@@ -114,7 +114,7 @@ def test_address_source_arp():
 
     instance = Instance.build(name, template=template, settings=settings)
     assert(instance)
-    assert(instance.meta['address_source'] == 'arp')
+    assert(instance.meta['address-source'] == 'arp')
     assert(instance._arp_table())
     instance.meta.pop('address', None) # Flush cached address.
     address = instance.address()
