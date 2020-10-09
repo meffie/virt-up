@@ -23,6 +23,7 @@ Create virtual machines quickly with virt-builder and virt-sysprep on a local
 libvirt-based hypervisor.
 """
 
+import crypt
 import configparser
 import datetime
 import json
@@ -660,11 +661,15 @@ class Instance:
         if os.path.exists(image):
             raise FileExistsError(f"Image file '{image}' already exists.")
 
-        # Generate the user creditials for login.
+        # Generate the ssh keys. Generate the passwords if not provided.
         if not user:
             user = settings.username
         root_creds = Creds('root', password=root_password)
         user_creds = Creds(user, password=password)
+
+        # useradd requires a hashed password.
+        salt = crypt.mksalt(crypt.METHOD_SHA512)
+        password = crypt.crypt(user_creds.password, salt)
 
         # Setup virt-builder arguments.
         if settings.dns_domain:
@@ -683,8 +688,7 @@ class Instance:
             '--hostname', hostname,
             '--root-password', f'password:{root_creds.password}',
             '--run-command', 'ssh-keygen -A',
-            '--run-command', f'id -u {user} || useradd -m -s /bin/bash -p "" {user}',
-            '--run-command', f'test -x /sbin/chpasswd && (echo "{user}:{user_creds.password}" | /sbin/chpasswd)',
+            '--run-command', f"useradd -m -s /bin/bash -p '{password}' {user}",
             '--ssh-inject', f'{user}:file:{user_creds.ssh_identity}.pub',
             '--run-command', 'mkdir -p /etc/sudoers.d',
             '--write',  f'/etc/sudoers.d/99-sna-devlab:{user} ALL=(ALL) NOPASSWD: ALL',
