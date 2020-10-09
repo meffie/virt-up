@@ -325,12 +325,19 @@ class Instance:
         """
         if not self.domain.isActive():
             log.info(f"Starting instance '{self.name}'.")
-            self.domain.create()
             for retries in range(120, -1, -1):
-                time.sleep(2)
+                try:
+                    self.domain.create()
+                except libvirt.libvirtError as e:
+                    if e.get_error_code() == libvirt.VIR_ERR_OPERATION_INVALID:
+                        pass  # domain is running
+                    else:
+                        raise e
                 if self.domain.isActive():
-                    break
-                log.debug(f"Waiting for running state; {retries} left.")
+                    return
+                if retries > 0:
+                    log.debug(f"Waiting for running state; {retries} left.")
+                    time.sleep(2)
             if not self.domain.isActive():
                 raise TimeoutError(f"Failed to start instance '{self.name}'.")
 
@@ -340,13 +347,19 @@ class Instance:
         """
         if self.domain.isActive():
             log.info(f"Stopping instance '{self.name}'.")
-            self.domain.shutdown()
             for retries in range(120, -1, -1):
-                time.sleep(2)
+                try:
+                    self.domain.shutdown()
+                except libvirt.libvirtError as e:
+                    if e.get_error_code() == libvirt.VIR_ERR_OPERATION_INVALID:
+                        pass  # domain is not running
+                    else:
+                        raise e
                 if not self.domain.isActive():
-                    break
-                self.domain.shutdown()
-                log.debug(f"Waiting for shutdown state; {retries} left.")
+                    return
+                if retries > 0:
+                    log.debug(f"Waiting for shutdown state; {retries} left.")
+                    time.sleep(2)
             if self.domain.isActive():
                 raise TimeoutError(f"Failed to stop instance '{self.name}'.")
 
