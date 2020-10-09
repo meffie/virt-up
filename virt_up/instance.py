@@ -742,6 +742,7 @@ class Instance:
     def clone(self,
             target,
             settings=None,
+            hostname=None,
             memory=None,
             size=None,
             vcpus=None,
@@ -788,10 +789,11 @@ class Instance:
             cp(*extra_args, source_image, target_image)
 
         # Setup virt-sysprep args.
-        if settings.dns_domain:
-            hostname = f'{target}.{settings.dns_domain}'
-        else:
-            hostname = target
+        if not hostname:
+            if settings.dns_domain:
+                hostname = f'{target}.{settings.dns_domain}'
+            else:
+                hostname = target
 
         extra_args = settings.extra_args('virt-sysprep')
 
