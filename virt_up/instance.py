@@ -626,7 +626,8 @@ class Instance:
               memory=512,
               size=None,
               vcpus=1,
-              graphics='none'):
+              graphics='none',
+              **kwargs):
         """
         Build an instance with virt-builder and virt-install.
         """

@@ -112,30 +112,19 @@ def create(args):
     the template to create a new instance. Just start the instance if it
     already exists.
     """
-    if not args.name:
-        die(f'<name> is required.\nusage: {usage}')
-    if args.template is None:
-        args.template = args.name
+    options = vars(args)
+    name = options.pop('name', None)
+    template = options.pop('template', name)
+    prefix = options.pop('prefix', 'TEMPLATE-')
 
-    options = {}
-    if args.root_password:
-        options['root_password'] = args.root_password
-    if args.user:
-        options['user'] = args.user
-    if args.password:
-        options['password'] = args.password
-    if args.size:
-        options['size'] = args.size
-    if args.memory:
-        options['memory'] = args.memory
-    if args.graphics:
-        options['graphics'] = args.graphics
+    if not name:
+        die(f'<name> is required.\nusage: {usage}')
 
     try:
-        template = Instance.build(args.template, prefix='TEMPLATE-', **options)
+        template = Instance.build(name=template, template=template, prefix=prefix, **options)
         if args.no_clone:
             return
-        instance = template.clone(args.name, **options)
+        instance = template.clone(name, **options)
         instance.wait_for_port(22)
         log.info(f"Instance '{instance.name}' is up.")
     except ValueError as e:
@@ -162,9 +151,9 @@ def main():
     parser.add_argument('--user', metavar='<user>', help='username (default: virt)')
     parser.add_argument('--password', metavar='<password>', help='password (default: random)')
     parser.add_argument('--size', metavar='<size>', help='instance disk size (default: image size)')
-    parser.add_argument('--memory', metavar='<memory>', help='instance memory (default: 512)')
-    parser.add_argument('--vcpus', metavar='<vcpus>', help='instance vcpus (default: 1)')
-    parser.add_argument('--graphics', metavar='<graphics>', help='instance graphics type (default: none)')
+    parser.add_argument('--memory', metavar='<memory>', help='instance memory (default: 512)', default=512)
+    parser.add_argument('--vcpus', metavar='<vcpus>', help='instance vcpus (default: 1)', default=1)
+    parser.add_argument('--graphics', metavar='<graphics>', help='instance graphics type (default: none)', default='none')
 
     parser.add_argument('--command', metavar='<command>', help='--login ssh command')
     parser.add_argument('--no-clone', action='store_true', help='build template instance only')
