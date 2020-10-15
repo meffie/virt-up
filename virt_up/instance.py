@@ -387,6 +387,7 @@ class Instance:
         self._disks = None
         self._mac = None
         self._address = None
+        Instance.update_inventory()
 
     def _ia_to_addresses(self, ia):
         """
@@ -752,6 +753,7 @@ class Instance:
             vcpus=None,
             graphics=None,
             dns_domain=None,
+            inventory=False,
             **kwargs):
         """
         Clone this instance to a new target instance.
@@ -855,7 +857,41 @@ class Instance:
         instance = Instance(target, meta=meta)
         maddrs.update(target, instance.mac())
         instance.address() # Wait for an address to be assigned.
+        if inventory:
+            Instance.update_inventory()
         return instance
+
+    @classmethod
+    def update_inventory(cls, filename=None):
+        """
+        Create an ansible inventory file for the cloned instances.
+        """
+        if filename is None:
+            filename = f'{xdg_data_home}/virt-up/inventory.yaml'
+        hosts = {}
+        for name in Instance.list():
+            instance = Instance(name)
+            hosts[name] = {
+                'ansible_user': instance.meta['user']['username'],
+                'ansible_host': instance.meta['address'],
+                'ansible_private_key_file': instance.meta['user']['ssh_identity'],
+                'ansible_connection': 'ssh',
+                'ansible_ssh_common_args': \
+                    '-o UserKnownHostsFile=/dev/null -o ControlMaster=auto ' \
+                    '-o ControlPersist=60s -o ForwardX11=no -o LogLevel=ERROR -o IdentitiesOnly=yes ' \
+                    '-o StrictHostKeyChecking=no'
+            }
+        with open(filename, 'w') as fp:
+            fp.writelines([
+                '---\n',
+                'all:\n',
+                '  children:\n',
+                '    virt_up_managed:\n',
+                '      hosts:\n'])
+            for name in hosts.keys():
+                fp.write(f'        {name}:\n')
+                for key, value in hosts[name].items():
+                    fp.write(f'          {key}: "{value}"\n')
 
     def login(self, command=None):
         """

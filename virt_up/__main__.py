@@ -158,6 +158,8 @@ def main():
 
     parser.add_argument('--command', metavar='<command>', help='--login ssh command')
     parser.add_argument('--no-clone', action='store_true', help='build template instance only')
+    parser.add_argument('--no-inventory', dest='inventory', action='store_false',
+                                          help='exclude instance from the virt-up ansible inventory file')
     parser.add_argument('--all', action='store_true', help='include template instances')
     parser.add_argument('--yes', action='store_true', help='answer yes to interactive questions')
     parser.add_argument('--quiet', action='store_true', help='show less output')
