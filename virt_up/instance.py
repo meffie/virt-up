@@ -627,6 +627,7 @@ class Instance:
               size=None,
               vcpus=1,
               graphics='none',
+              dns_domain=None,
               **kwargs):
         """
         Build an instance with virt-builder and virt-install.
@@ -673,8 +674,10 @@ class Instance:
         password = crypt.crypt(user_creds.password, salt)
 
         # Setup virt-builder arguments.
-        if settings.dns_domain:
-            hostname = f'{name}.{settings.dns_domain}'
+        if dns_domain is None:
+            dns_domain = settings.dns_domain
+        if dns_domain:
+            hostname = f'{name}.{dns_domain}'
         else:
             hostname = name
         extra_args = settings.extra_args('virt-builder')
@@ -748,6 +751,7 @@ class Instance:
             size=None,
             vcpus=None,
             graphics=None,
+            dns_domain=None,
             **kwargs):
         """
         Clone this instance to a new target instance.
@@ -791,8 +795,10 @@ class Instance:
 
         # Setup virt-sysprep args.
         if not hostname:
-            if settings.dns_domain:
-                hostname = f'{target}.{settings.dns_domain}'
+            if dns_domain is None:
+                dns_domain = settings.dns_domain
+            if dns_domain:
+                hostname = f'{target}.{dns_domain}'
             else:
                 hostname = target
 
