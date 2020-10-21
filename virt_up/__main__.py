@@ -28,7 +28,7 @@ from virt_up.instance import Instance, Settings
 usage="""\
 virt-up [--name] <name> [--template <template>] [options]
                --list [--all] | --list-templates
-               --login [--name] <name> [--command "<command>"]
+               --login [--name] <name> [--sftp] [--command "<command>"]
                --delete [--name] <name> | --delete --all
 """
 
@@ -102,9 +102,14 @@ def login(args):
         die(f'<name> is required.\nusage: {usage}')
     if not Instance.exists(args.name):
         log.error(f"Instance '{args.name}' not found.")
-    else:
-        instance = Instance(args.name)
-        instance.login(args.command)
+        return
+    options = {}
+    if args.sftp:
+        options['mode'] = 'sftp'
+    if args.command:
+        options['command'] = args.command
+    instance = Instance(args.name)
+    instance.login(**options)
 
 def create(args):
     """
@@ -140,7 +145,7 @@ def main():
     group.add_argument('--list', action='store_true', help='list instances')
     group.add_argument('--list-templates', action='store_true', help='list template names')
     group.add_argument('--delete', action='store_true', help='delete the instance')
-    group.add_argument('--login', action='store_true', help=argparse.SUPPRESS)
+    group.add_argument('--login', action='store_true', help='login to a running instance')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('name', metavar='<name>', nargs='?', help='instance name')
@@ -156,6 +161,7 @@ def main():
     parser.add_argument('--graphics', metavar='<graphics>', help='instance graphics type (default: none)', default='none')
     parser.add_argument('--dns-domain', metavar='<dns-domain>', help='dns domain name')
 
+    parser.add_argument('--sftp', action='store_true', help='--login with sftp')
     parser.add_argument('--command', metavar='<command>', help='--login ssh command')
     parser.add_argument('--no-clone', action='store_true', help='build template instance only')
     parser.add_argument('--no-inventory', dest='inventory', action='store_false',

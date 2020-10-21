@@ -76,6 +76,7 @@ def _adjust_sh_log():
 # Commands
 cp = sh.Command('cp').bake(_out=logout, _err=logerr)
 ssh = sh.Command('ssh')
+sftp = sh.Command('sftp')
 ssh_keygen = sh.Command('ssh-keygen').bake(_out=logout, _err=logerr)
 qemu_img = sh.Command('qemu-img').bake(_out=logout, _err=logerr)
 virt_builder = sh.Command('virt-builder').bake(_out=logout, _err=logerr)
@@ -893,10 +894,13 @@ class Instance:
                 for key, value in hosts[name].items():
                     fp.write(f'          {key}: "{value}"\n')
 
-    def login(self, command=None):
+    def login(self, mode='ssh', command=None):
         """
-        ssh login to the instance.
+        ssh or stfp login to the instance.
         """
+        modes = {'ssh': ssh.__name__, 'sftp': sftp.__name__}
+        if mode not in modes:
+            raise ValueError(f"Unsupported mode '{mode}'.")
         self.start()
         self.meta.pop('address', None) # Flush our cached address.
         address = self.address()
@@ -914,7 +918,7 @@ class Instance:
         if command:
             args.append(command)
 
-        self.wait_for_port(22)  # Wait until ssh port is ready.
-        args.insert(0, ssh.__name__) # Required for execv.
-        os.execv(ssh.__name__, args) # Drop into interactive shell, never to return.
-        assert(False) # unreachable
+        self.wait_for_port(22)      # Wait until ssh port is ready.
+        args.insert(0, modes[mode]) # Required for execv.
+        os.execv(modes[mode], args) # Drop into interactive shell, never to return.
+        raise AssertionError('exec failed')
