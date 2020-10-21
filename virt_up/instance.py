@@ -911,19 +911,10 @@ class Instance:
             '-o', 'LogLevel=ERROR',
             f'{user}@{address}',
         ]
+        if command:
+            args.append(command)
 
         self.wait_for_port(22)  # Wait until ssh port is ready.
-        if not command:
-            args.insert(0, ssh.__name__) # Required for execv.
-            os.execv(ssh.__name__, args) # Drop into interactive shell, never to return.
-            assert(False) # unreachable
-        else:
-            args.append(command)
-            output = []
-            try:
-                for line in ssh(*args, _err=logerr, _iter=True):
-                    logout(line)
-                    output.append(line.rstrip())
-            except sh.ErrorReturnCode as e:
-                log.error(e)
-            return ''.join(output)
+        args.insert(0, ssh.__name__) # Required for execv.
+        os.execv(ssh.__name__, args) # Drop into interactive shell, never to return.
+        assert(False) # unreachable
