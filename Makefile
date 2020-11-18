@@ -23,6 +23,9 @@ help:
 	@echo "  clean      remove generated files"
 	@echo "  distclean  remove generated files and virtual env"
 
+init.debian:
+	sudo apt-get install -y libvirt-dev
+
 .init:
 	test -d .venv || $(PYTHON3) -m venv .venv
 	. .venv/bin/activate && pip install -U wheel
