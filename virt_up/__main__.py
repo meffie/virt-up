@@ -122,7 +122,7 @@ def create(args):
     template = options.pop('template', name)
     prefix = options.pop('prefix', 'TEMPLATE-')
 
-    if not name:
+    if not (name or args.no_clone):
         die(f'<name> is required.\nusage: {usage}')
 
     try:
