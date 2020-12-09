@@ -69,6 +69,18 @@ Usage
       --debug               show debug tracing
 
 
+Ubuntu installation notes
+=========================
+
+Linux images are not readable by regular users on recent Ubuntu distributions,
+which breaks the ability of libguestfs to modify guest images. Update the
+permissions with the `dpkg-statoverride` command to be able to run the
+libguestfs tools as a regular user:
+
+    $ for image in /boot/vmlinu*; do sudo dpkg-statoverride --update --add root root 0644 $image || true; done
+
+You will need to run this *everytime* the kernel is updated.
+
 Settings
 ========
 
