@@ -50,6 +50,10 @@ release: init
 	git commit -m "Make version v$(VERSION)"
 	git tag -a -m "v$(VERSION)" "v$(VERSION)"
 
+version:
+	@dev_version=`git describe | sed -e 's/^v//'`; \
+	sed -i -e "s/__version__ = '.*'/__version__ = '$$dev_version'/" virt_up/__init__.py
+
 sdist: init
 	$(PYTHON) setup.py sdist
 
