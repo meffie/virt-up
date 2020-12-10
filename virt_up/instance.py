@@ -751,6 +751,7 @@ class Instance:
         instance = Instance(name, meta=meta)
         maddrs.update(name, instance.mac())
         instance.address() # Wait for address to be assigned.
+        Instance.update_inventory()
 
         return instance
 
@@ -878,19 +879,36 @@ class Instance:
         """
         if filename is None:
             filename = f'{xdg_data_home}/virt-up/inventory.yaml'
-        hosts = {}
-        for name in Instance.list():
+        ssh_options = [
+            ('ControlMaster', 'auto'),
+            ('ControlPersist', '60s'),
+            ('ForwardX11', 'no'),
+            ('IdentitiesOnly', 'yes'),
+            ('LogLevel', 'ERROR'),
+            ('StrictHostKeyChecking', 'no'),
+            ('UserKnownHostsFile', '/dev/null'),
+        ]
+        ssh_common_args = ' '.join(['-o %s=%s' % x for x in ssh_options])
+        clones = {}
+        templates = {}
+        for name in Instance.list(clones_only=False):
             instance = Instance(name)
-            hosts[name] = {
+            address = instance.meta.get('address', None)
+            if not address:
+                log.warning(f"Skipping inventory entry for instance '{name}'; address is not available.")
+                continue
+            host = {
                 'ansible_user': instance.meta['user']['username'],
-                'ansible_host': instance.meta['address'],
+                'ansible_host': address,
+                'ansible_port': '22',
                 'ansible_private_key_file': instance.meta['user']['ssh_identity'],
                 'ansible_connection': 'ssh',
-                'ansible_ssh_common_args': \
-                    '-o UserKnownHostsFile=/dev/null -o ControlMaster=auto ' \
-                    '-o ControlPersist=60s -o ForwardX11=no -o LogLevel=ERROR -o IdentitiesOnly=yes ' \
-                    '-o StrictHostKeyChecking=no'
+                'ansible_ssh_common_args': ssh_common_args,
             }
+            if 'cloned' in instance.meta:
+                clones[name] = host
+            else:
+                templates[name] = host
         with open(filename, 'w') as fp:
             fp.writelines([
                 '---\n',
@@ -898,9 +916,16 @@ class Instance:
                 '  children:\n',
                 '    virt_up_managed:\n',
                 '      hosts:\n'])
-            for name in hosts.keys():
+            for name in clones.keys():
                 fp.write(f'        {name}:\n')
-                for key, value in hosts[name].items():
+                for key, value in clones[name].items():
+                    fp.write(f'          {key}: "{value}"\n')
+            fp.writelines([
+                '    virt_up_templates:\n',
+                '      hosts:\n'])
+            for name in templates.keys():
+                fp.write(f'        {name}:\n')
+                for key, value in templates[name].items():
                     fp.write(f'          {key}: "{value}"\n')
 
     def login(self, mode='ssh', command=None):
