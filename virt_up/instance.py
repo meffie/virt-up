@@ -39,7 +39,7 @@ import xml.etree.ElementTree
 import sh
 import libvirt
 
-from .config import SETTINGS, TEMPLATES
+from .config import SETTINGS, TEMPLATES, SCRIPTS
 
 log = logging.getLogger(__name__)
 
@@ -202,7 +202,6 @@ class Creds:
             mkdir_p(os.path.dirname(ssh_identity))
             ssh_keygen('-t', 'rsa', '-N', '', '-f', ssh_identity)
         return ssh_identity
-
 
 class MacAddresses:
     filename = f'{xdg_data_home}/virt-up/macaddrs.json'
@@ -664,6 +663,16 @@ class Instance:
             raise FileExistsError(f"Domain '{name}' without metadata already exists.")
         if os.path.exists(image):
             raise FileExistsError(f"Image file '{image}' already exists.")
+
+        # Install virt-builder --run/--firstboot scripts.
+        for script in SCRIPTS:
+            path = os.path.join('/tmp/virt-up/scripts', script['name'])
+            if not os.path.exists(path):
+                if not os.path.exists('/tmp/virt-up/scripts'):
+                    os.makedirs('/tmp/virt-up/scripts')
+                with open(path, 'w') as f:
+                    f.write(script['contents'])
+                log.info('Wrote: %s', path)
 
         # Generate the ssh keys. Generate the passwords if not provided.
         if not user:

@@ -77,6 +77,7 @@ virt-builder-args = --firstboot-command "systemctl enable serial-getty@ttyS0.ser
                     --firstboot-command "systemctl start serial-getty@ttyS0.service"
                     --selinux-relabel
 virt-sysprep-args = --selinux-relabel
+
 [generic-debian-10]
 desc = Debian 10 (buster)
 os-version = debian-10
@@ -84,6 +85,7 @@ os-type = linux
 os-variant =  debian10
 arch = x86_64
 virt-builder-args = --install "sudo,qemu-guest-agent"
+                    --firstboot "/tmp/virt-up/scripts/fixup-network-interfaces.sh"
 virt-sysprep-args = --run-command "/usr/sbin/dpkg-reconfigure -f noninteractive openssh-server"
 
 [generic-debian-9]
@@ -93,6 +95,7 @@ os-type = linux
 os-variant =  debian9
 arch = x86_64
 virt-builder-args = --install "sudo,qemu-guest-agent"
+                    --firstboot "/tmp/virt-up/scripts/fixup-network-interfaces.sh"
 virt-sysprep-args = --run-command "/usr/sbin/dpkg-reconfigure -f noninteractive openssh-server"
 
 [generic-ubuntu-18]
@@ -102,6 +105,7 @@ os-type = linux
 os-variant =  ubuntu18.04
 arch = x86_64
 virt-builder-args = --install "sudo,policykit-1,qemu-guest-agent"
+                    --firstboot "/tmp/virt-up/scripts/fixup-network-interfaces.sh"
 virt-sysprep-args = --run-command "/usr/sbin/dpkg-reconfigure -f noninteractive openssh-server"
 virt-install-args = --channel unix,mode=bind,path=/var/lib/libvirt/qemu/guest01.agent,target_type=virtio,name=org.qemu.guest_agent.0
 
@@ -115,3 +119,28 @@ virt-builder-args = --install "sudo,qemu-guest-agent"
 virt-sysprep-args =
 virt-install-args = --channel unix,mode=bind,path=/var/lib/libvirt/qemu/guest01.agent,target_type=virtio,name=org.qemu.guest_agent.0
 """
+
+#
+# virt-builder --run/--firstboot scripts
+#
+SCRIPTS = [
+    {
+        'name': 'fixup-network-interfaces.sh',
+        'contents': r"""#!/bin/sh
+old_iface=`awk '/^iface en/ {print $2}' /etc/network/interfaces | tail -1`
+new_iface=`ip -o -a link | cut -f2 -d: | tr -d ': ' | grep '^en' | tail -1`
+
+echo "old_iface:$old_iface"
+echo "new_iface:$new_iface"
+
+if test "x$new_iface" = "x"; then
+    echo "Enable to detect primary interface." >&2
+elif test "x$old_iface" != "x$new_iface"; then
+    echo "Changing $old_iface to $new_iface in /etc/network/interfaces"
+    sed -i -e "s/$old_iface/$new_iface/" /etc/network/interfaces
+    echo "Bringing up interface $new_iface"
+    ifup "$new_iface"
+fi
+"""
+    },
+]
