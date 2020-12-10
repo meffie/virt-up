@@ -132,10 +132,12 @@ def create(args):
         instance = template.clone(name, **options)
         instance.wait_for_port(22)
         log.info(f"Instance '{instance.name}' is up.")
+    except KeyError as e:
+        raise(e)
     except ValueError as e:
-        die(e)
+        die('ValueError:' + str(e))
     except LookupError as e:
-        die(e)
+        die('LookupError: ' + str(e))
 
 def main():
     parser = argparse.ArgumentParser(prog='virt-up', usage=usage)
