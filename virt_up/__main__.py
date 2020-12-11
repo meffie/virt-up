@@ -89,10 +89,18 @@ def delete(args):
                 sys.stdout.write(f'About to delete instances: {names_str}\n')
                 answer = input('Continue? [y/n] > ').lower()
             if answer in ('y', 'yes'):
+                clones = []
+                templates = []
                 for name in names:
-                    if Instance.exists(name):
-                        instance = Instance(name)
-                        instance.delete()
+                    instance = Instance(name)
+                    if 'cloned' in instance.meta:
+                        clones.append(instance)
+                    else:
+                        templates.append(instance)
+                for instance in clones:
+                    instance.delete()
+                for instance in templates:
+                    instance.delete()
 
 def login(args):
     """

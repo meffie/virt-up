@@ -376,6 +376,18 @@ class Instance:
         """
         Delete the instance, disk images, and instance meta data.
         """
+        in_use = []
+        for name in Instance.list():
+            instance = Instance(name)
+            from_ = instance.meta.get('from', '')
+            format_ = instance.meta.get('image_format', '')
+            if from_ == self.name and format_ == 'qcow2':
+                in_use.append(instance.name)
+        if in_use:
+            in_use = ', '.join(["'%s'" %x for x in in_use])
+            log.error(f"Unable to delete '{self.name}'; in use by {in_use}.")
+            return 1
+
         log.info(f"Destroying instance '{self.name}'.")
         rm_f(self.metafile)
         self.meta = None
@@ -747,6 +759,7 @@ class Instance:
             'os_variant': settings.os_variant,
             'hostname': hostname,
             'disk': image,
+            'image_format': settings.image_format,
             'memory': memory,
             'vcpus': vcpus,
             'graphics': graphics,
@@ -870,8 +883,10 @@ class Instance:
         meta = self.meta.copy()
         meta.pop('address', None)  # Remove the parent's address.
         meta['cloned'] = str(datetime.datetime.now())
+        meta['from'] = self.name
         meta['hostname'] = hostname
         meta['disk'] = target_image
+        meta['format'] = settings.image_format
         meta['memory'] = memory
         meta['vcpus'] = vcpus
         meta['graphics'] = graphics

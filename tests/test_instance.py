@@ -100,10 +100,11 @@ def test_clone():
     ready = target.wait_for_port(22)
     assert(ready)
 
+    target.delete() # Must delete cloned image first.
+    assert(not Instance.exists(target_name))
+
     source.delete()
     assert(not Instance.exists(source_name))
-    target.delete()
-    assert(not Instance.exists(target_name))
 
 def test_address_source_arp():
     template = 'generic-centos-8'
