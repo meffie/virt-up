@@ -7,13 +7,16 @@ and **virt-install**.
 
 Virtual machines are created from existing digitally signed OS images, which
 are downloaded and cached. A template virtual machine is created from the
-downloaded image. Virtual machines are cloned from the template machine to
-create new virtual machines quickly.
+downloaded image. Optionally, an ansible playbook is executed to further
+customize the templates. Virtual machines are cloned from the templates
+to quickly create new instances.
 
 A login user and the ssh keys to connect to the new virtual machines are
 created automatically. The login user is given sudo access. Connection
 information is stored in a json meta data file for each virtual machine
-created.
+created.  An ansible inventory file is created for the templates and
+instances to make it easier to run ansible playbooks for further
+configuration.
 
 Normally you should run **virt-up** as a regular user, not root.
 
@@ -50,7 +53,7 @@ Usage
       --list-templates      list template names
       --delete              delete the instance
       -t <template>, --template <template>
-                            template name (default: <name>)
+                            template definition name (default: <name>)
       --root-password <root-password>
                             root password (default: random)
       --user <user>         username (default: virt)
@@ -62,7 +65,7 @@ Usage
       --graphics <graphics>
                             instance graphics type (default: none)
       --command <command>   --login ssh command
-      --no-clone            build template instance only
+      --no-clone            build template instance only, --name is ignored
       --all                 include template instances
       --yes                 answer yes to interactive questions
       --quiet               show less output
@@ -85,7 +88,7 @@ Settings
 ========
 
 **virt-up** reads settings for INI formatted configuration files.
-The following files are read in order, if they exist.
+The following files are read in order, when present.
 
 * ``/etc/virt-up/settings.cfg``
 * ``$XDG_CONFIG_HOME/virt-up/settings.cfg`` (``$XDG_CONFIG_HOME`` is ``$HOME/.config`` if not set)
@@ -118,25 +121,30 @@ virt-sysprep-args
 virt-install-args
   Extra arguments for ``virt-install``. (default: None)
 
+template-playbook
+  Optional ansible playbook to be executed on newly created template instances. (default: None)
 
-Template Defintions
-===================
+instance-playbook
+  Optional ansible playbook to be executed on newly created instances. (default: None)
 
-Additional OS types can be created with **virt-up** by providing template defintions
+Template definitions
+====================
+
+Additional template-definitions can be created with **virt-up** by providing template defintions
 in the following files:
 
 * ``/etc/virt-up/templates.cfg``
 * ``$XDG_CONFIG_HOME/virt-up/templates.cfg`` (``$XDG_CONFIG_HOME`` is ``$HOME/.config`` if not set)
 
 The ``templates.cfg`` files are INI formatted text files. Provide one section
-for each template definition. The section name is the template name used in
+for each template definition. The section name is the template definition name used in
 virt-up ``--template`` option. The following fields are supported:
 
 desc
   A text description, show by ``--list-templates``.
 
 os-version
-  The **virt-builder** ``<os_version>`` name. See ``virt-builder =-list`` for available names.
+  The **virt-builder** ``<os_version>`` name. See ``virt-builder --list`` for available names.
 
 os-type
   The **virt-install** ``--os-type``
@@ -155,3 +163,9 @@ virt-sysprep-args
 
 virt-install-args =
   Template specific extra arguments for ``virt-install``. (default: None)
+
+template-playbook
+  Optional ansible playbook to be executed on newly created template instances. (default: None)
+
+instance-playbook
+  Optional ansible playbook to be executed on newly created instances. (default: None)

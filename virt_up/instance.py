@@ -82,6 +82,10 @@ qemu_img = sh.Command('qemu-img').bake(_out=logout, _err=logerr)
 virt_builder = sh.Command('virt-builder').bake(_out=logout, _err=logerr)
 virt_install = sh.Command('virt-install').bake(_out=logout, _err=logerr)
 virt_sysprep = sh.Command('virt-sysprep').bake(_out=logout, _err=logerr)
+try:
+    ansible = sh.Command('ansible-playbook').bake(_out=logout, _err=logerr)
+except sh.CommandNotFound:
+    ansible = None
 
 # Avoid writing "domain not found" errors to the console.
 def _libvirt_callback(userdata, err):
@@ -103,6 +107,8 @@ class Settings:
         self.image_format = self.site.get('image-format', 'qcow2')
         self.dns_domain = self.site.get('dns-domain', '')
         self.address_source = self.site.get('address-source', 'agent')
+        self.template_playbook = self.site.get('template-playbook', '')
+        self.instance_playbook = self.site.get('instance-playbook', '')
 
         # Load template definitions.
         self.templates = self._load('templates', TEMPLATES)
@@ -116,6 +122,8 @@ class Settings:
                 raise LookupError(f"Template '{template}' not found in settings.")
             self.template = self.templates[template]
             self.template_name = template
+            self.template_playbook = self.template.get('template-playbook')
+            self.instance_playbook = self.template.get('instance-playbook')
             self.os_version = self.template.get('os-version')
             self.os_variant = self.template.get('os-variant')
             self.address_source = self.template.get('address-source', self.address_source)
@@ -752,6 +760,8 @@ class Instance:
         maddrs.update(name, instance.mac())
         instance.address() # Wait for address to be assigned.
         Instance.update_inventory()
+        if settings.template_playbook:
+            instance.run_playbook(settings.template_playbook)
 
         return instance
 
@@ -870,15 +880,17 @@ class Instance:
         instance.address() # Wait for an address to be assigned.
         if inventory:
             Instance.update_inventory()
+            if settings.instance_playbook:
+                instance.run_playbook(settings.instance_playbook)
+
         return instance
 
     @classmethod
-    def update_inventory(cls, filename=None):
+    def update_inventory(cls):
         """
         Create an ansible inventory file for the cloned instances.
         """
-        if filename is None:
-            filename = f'{xdg_data_home}/virt-up/inventory.yaml'
+        filename = f'{xdg_data_home}/virt-up/inventory.yaml'
         ssh_options = [
             ('ControlMaster', 'auto'),
             ('ControlPersist', '60s'),
@@ -956,3 +968,21 @@ class Instance:
         args.insert(0, modes[mode]) # Required for execv.
         os.execv(modes[mode], args) # Drop into interactive shell, never to return.
         raise AssertionError('exec failed')
+
+    def run_playbook(self, playbook):
+        """
+        Run an ansible playbook on this instance.
+        """
+        inventory = f'{xdg_data_home}/virt-up/inventory.yaml'
+        address = self.address()
+        if not address:
+            log.warning(f"Skipping playbook; address for '{self.name}' is not available.")
+            return
+        if not os.path.exists(playbook):
+            log.warning(f"Skipping playbook; '{playbook}' file not found.")
+            return
+        if not ansible:
+            log.warning("Skipping playbook; 'ansible-playbook' command not found.")
+            return
+        log.info(f"Running playbook '{playbook}'.")
+        ansible('-i', inventory, '--limit', self.name, playbook)
