@@ -29,7 +29,8 @@ from virt_up.instance import Instance
     'generic-debian-10',
     'generic-fedora-32',
     'generic-opensuse-42',
-    'generic-ubuntu-18'])
+    'generic-ubuntu-18',
+])
 def test_up(name):
     options = {}
     template = None
@@ -41,17 +42,12 @@ def test_up(name):
         assert(instance)
         address = instance.address()
         assert(address)
-        output = instance.login(command='sudo -n id')
-        assert('uid=0' in output)
+        code, out, err = instance.run_command('id', sudo=True)
+        assert(code == 0)
+        assert('uid=0' in out)
+        assert(err == '')
     finally:
-        # cleanup
-        try:
-            if template:
-                template.delete()
-        except:
-            pass
-        try:
-            if instance:
-                instance.delete()
-        except:
-            pass
+        if instance:
+            instance.delete()
+        if template:
+            template.delete()

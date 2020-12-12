@@ -26,6 +26,7 @@ libvirt-based hypervisor.
 import configparser
 import crypt
 import datetime
+import io
 import glob
 import json
 import logging
@@ -979,6 +980,37 @@ class Instance:
         args.insert(0, modes[mode]) # Required for execv.
         os.execv(modes[mode], args) # Drop into interactive shell, never to return.
         raise AssertionError('exec failed')
+
+    def run_command(self, *args, sudo=False):
+        """
+        Run a command via ssh and return the exit code, stdout,
+        and stderr as a tuple.
+        """
+        self.wait_for_port(22)
+        address = self.address()
+        user = self.meta['user']['username']
+        ssh_identity = self.meta['user']['ssh_identity']
+        if sudo:
+            args = ['sudo', '-n'] + list(args)
+        command = shlex.join(args)
+        ssh_args = [
+            '-i', ssh_identity,
+            '-o', 'PasswordAuthentication=no',
+            '-o', 'CheckHostIP=no',
+            '-o', 'UserKnownHostsFile=/dev/null',
+            '-o', 'StrictHostKeyChecking=no',
+            '-o', 'LogLevel=ERROR',
+            f'{user}@{address}',
+            command,
+        ]
+        code = 0
+        out = io.StringIO()
+        err = io.StringIO()
+        try:
+            ssh(ssh_args, _out=out, _err=err)
+        except sh.ErrorReturnCode as e:
+            code = e.exit_code
+        return code, out.getvalue(), err.getvalue()
 
     def run_playbook(self, playbook):
         """
