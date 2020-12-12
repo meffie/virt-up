@@ -26,6 +26,7 @@ libvirt-based hypervisor.
 import configparser
 import crypt
 import datetime
+import fcntl
 import io
 import glob
 import json
@@ -158,6 +159,35 @@ class Settings:
             args_str = args_str.format(**variables)
             args.extend(shlex.split(args_str))
         return args
+
+class LockFile:
+    """
+    Interprocess lock file.
+    """
+    def _write(self, text):
+        self.fp.seek(0)
+        self.fp.truncate()
+        self.fp.write(text)
+        self.fp.flush()
+        self.fp.seek(0)
+
+    def __enter__(self):
+        if os.path.exists('/var/run/user/%d' % os.getuid()):
+            path = '/var/run/user/%d/virt-up.lock' % os.getuid()
+        else:
+            path = '/tmp/virt-up.lock'
+        log.debug("Waiting for lock")
+        self.fp = open(path, 'a+')
+        fcntl.flock(self.fp.fileno(), fcntl.LOCK_EX)
+        self._write(str(os.getpid())) # For troubleshooting.
+        log.debug("Obtained lock")
+
+    def __exit__(self, *exc):
+        log.debug("Releasing lock")
+        self._write('')
+        fcntl.flock(self.fp.fileno(), fcntl.LOCK_UN)
+        self.fp.close()
+        log.debug("Released lock")
 
 class Connection:
     """
@@ -712,19 +742,20 @@ class Instance:
         if size:
             extra_args.extend(['--size', size])
 
-        log.info(f"Building image file '{image}'.")
-        virt_builder(
-            settings.os_version,
-            '--output', image,
-            '--format', settings.image_format,
-            '--hostname', hostname,
-            '--root-password', f'password:{root_creds.password}',
-            '--run-command', 'ssh-keygen -A',
-            '--run-command', f"useradd -m -s /bin/bash -p '{password}' {user}",
-            '--ssh-inject', f'{user}:file:{user_creds.ssh_identity}.pub',
-            '--run-command', 'mkdir -p /etc/sudoers.d',
-            '--write',  f'/etc/sudoers.d/99-sna-devlab:{user} ALL=(ALL) NOPASSWD: ALL',
-            *extra_args)
+        with LockFile():
+            log.info(f"Building image file '{image}'.")
+            virt_builder(
+                settings.os_version,
+                '--output', image,
+                '--format', settings.image_format,
+                '--hostname', hostname,
+                '--root-password', f'password:{root_creds.password}',
+                '--run-command', 'ssh-keygen -A',
+                '--run-command', f"useradd -m -s /bin/bash -p '{password}' {user}",
+                '--ssh-inject', f'{user}:file:{user_creds.ssh_identity}.pub',
+                '--run-command', 'mkdir -p /etc/sudoers.d',
+                '--write',  f'/etc/sudoers.d/99-sna-devlab:{user} ALL=(ALL) NOPASSWD: ALL',
+                *extra_args)
 
         # Setup virt-install options. Reuse the last mac address for this
         # instance so it will (hopefully) be assigned the same address.
@@ -734,18 +765,19 @@ class Instance:
             optional_args.extend(['--mac', mac])
         extra_args = settings.extra_args('virt-install')
 
-        log.info(f"Importing instance '{name}'.")
-        virt_install(
-            '--import',
-            '--name', name,
-            '--disk', image,
-            '--memory', memory,
-            '--vcpus', vcpus,
-            '--graphics', graphics,
-            '--os-variant', settings.os_variant,
-            '--noautoconsole',
-            *optional_args,
-            *extra_args)
+        with LockFile():
+            log.info(f"Importing instance '{name}'.")
+            virt_install(
+                '--import',
+                '--name', name,
+                '--disk', image,
+                '--memory', memory,
+                '--vcpus', vcpus,
+                '--graphics', graphics,
+                '--os-variant', settings.os_variant,
+                '--noautoconsole',
+                *optional_args,
+                *extra_args)
 
         # Attach the new domain instance and update the meta data. Save the
         # assigned mac address for next time.
@@ -819,12 +851,14 @@ class Instance:
         if os.path.exists(target_image):
             raise FileExistsError(f"Image file '{target_image}' already exists.")
         self.stop()  # Ensure we are stopped before cloning.
-        log.info(f"Cloning '{source_image}' to '{target_image}'.")
-        if settings.image_format == 'qcow2':
-            qemu_img.create('-f', 'qcow2', '-F', 'qcow2', '-b', source_image, target_image)
-        else:
-            extra_args = settings.extra_args('cp')
-            cp(*extra_args, source_image, target_image)
+
+        with LockFile():
+            log.info(f"Cloning '{source_image}' to '{target_image}'.")
+            if settings.image_format == 'qcow2':
+                qemu_img.create('-f', 'qcow2', '-F', 'qcow2', '-b', source_image, target_image)
+            else:
+                extra_args = settings.extra_args('cp')
+                cp(*extra_args, source_image, target_image)
 
         # Setup virt-sysprep args.
         if not hostname:
@@ -837,13 +871,14 @@ class Instance:
 
         extra_args = settings.extra_args('virt-sysprep')
 
-        log.info(f"Preparing target image '{target_image}'.")
-        virt_sysprep(
-            '--quiet',
-            '--add', target_image,
-            '--operations', 'defaults,-ssh-userdir',
-            '--hostname', hostname,
-            *extra_args)
+        with LockFile():
+            log.info(f"Preparing target image '{target_image}'.")
+            virt_sysprep(
+                '--quiet',
+                '--add', target_image,
+                '--operations', 'defaults,-ssh-userdir',
+                '--hostname', hostname,
+                *extra_args)
 
         # Setup virt-install options. Reuse the last mac address for this
         # instance so it will (hopefully) be assigned the same address.
@@ -861,19 +896,20 @@ class Instance:
 
         extra_args = settings.extra_args('virt-install')
 
-        log.info(f"Importing instance '{target}'.")
-        virt_install(
-            '--import',
-            '--name', target,
-            '--disk', target_image,
-            '--memory', memory,
-            '--vcpus', vcpus,
-            '--graphics', graphics,
-            '--os-variant', self.meta['os_variant'],
-            '--noautoconsole',
-            '--autostart',
-            *optional_args,
-            *extra_args)
+        with LockFile():
+            log.info(f"Importing instance '{target}'.")
+            virt_install(
+                '--import',
+                '--name', target,
+                '--disk', target_image,
+                '--memory', memory,
+                '--vcpus', vcpus,
+                '--graphics', graphics,
+                '--os-variant', self.meta['os_variant'],
+                '--noautoconsole',
+                '--autostart',
+                *optional_args,
+                *extra_args)
 
         # Attach the new domain instance and update the meta data. Save the
         # assigned mac address for next time.
