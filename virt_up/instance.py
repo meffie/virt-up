@@ -23,9 +23,10 @@ Create virtual machines quickly with virt-builder and virt-sysprep on a local
 libvirt-based hypervisor.
 """
 
-import crypt
 import configparser
+import crypt
 import datetime
+import glob
 import json
 import logging
 import os
@@ -310,6 +311,12 @@ class Instance:
         with os.fdopen(os.open(self.metafile, flags, 0o600), 'w') as fp:
             json.dump(self.meta, fp, indent=4)
 
+    def is_clone(self):
+        return 'cloned' in self.meta
+
+    def is_template(self):
+        return 'cloned' not in self.meta
+
     def mac(self):
         if self._mac is None:
             root = xml.etree.ElementTree.fromstring(self.domain.XMLDesc())
@@ -377,8 +384,7 @@ class Instance:
         Delete the instance, disk images, and instance meta data.
         """
         in_use = []
-        for name in Instance.list():
-            instance = Instance(name)
+        for instance in Instance.all():
             from_ = instance.meta.get('from', '')
             format_ = instance.meta.get('image_format', '')
             if from_ == self.name and format_ == 'qcow2':
@@ -595,21 +601,11 @@ class Instance:
         raise LookupError(f"Unable to connect to '{address}:{port}'.")
 
     @classmethod
-    def list(cls, clones_only=True):
-        with Connection() as conn:
-            for domain in conn.listAllDomains():
-                name = domain.name()
-                metafile = f'{xdg_data_home}/virt-up/instance/{name}.json'
-                try:
-                    with open(metafile, 'r') as fp:
-                        meta = json.load(fp)
-                    if clones_only:
-                        if 'cloned' in meta:
-                            yield name
-                    else:
-                        yield name
-                except FileNotFoundError:
-                    pass
+    def all(cls):
+        pattern = f'{xdg_data_home}/virt-up/instance/*.json'
+        for path in glob.glob(pattern):
+            name = os.path.basename(path).replace('.json', '')
+            yield Instance(name)
 
     @classmethod
     def _domain_exists(cls, name):
@@ -918,8 +914,8 @@ class Instance:
         ssh_common_args = ' '.join(['-o %s=%s' % x for x in ssh_options])
         clones = {}
         templates = {}
-        for name in Instance.list(clones_only=False):
-            instance = Instance(name)
+        for instance in Instance.all():
+            name = instance.name
             address = instance.meta.get('address', None)
             if not address:
                 log.warning(f"Skipping inventory entry for instance '{name}'; address is not available.")
@@ -932,7 +928,7 @@ class Instance:
                 'ansible_connection': 'ssh',
                 'ansible_ssh_common_args': ssh_common_args,
             }
-            if 'cloned' in instance.meta:
+            if instance.is_clone():
                 clones[name] = host
             else:
                 templates[name] = host

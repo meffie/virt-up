@@ -55,13 +55,13 @@ def list_instances(args):
     """
     List instances.
     """
-    clones_only = (not args.all)
-    for name in sorted(Instance.list(clones_only)):
-        sys.stdout.write(f'{name}\n')
+    for instance in Instance.all():
+        if args.all or not instance.is_template():
+            sys.stdout.write(f'{instance.name}\n')
 
 def list_templates(args):
     """
-    List available templates.
+    List available template definitions.
     """
     settings = Settings()
     for name in sorted(settings.templates.keys()):
@@ -71,36 +71,39 @@ def list_templates(args):
 
 def delete(args):
     """
-    Delete the instance.
+    Delete the instance or all of the instances.
     """
     if not (bool(args.name) ^ bool(args.all)):
         die(f'<name> or --all is required.\nusage: {usage}')
-    if args.name:
-        if Instance.exists(args.name):
-            instance = Instance(args.name)
-            instance.delete()
-    else:
-        names = list(Instance.list(clones_only=False))
-        if names:
-            if args.yes:
-                answer = 'yes'
-            else:
-                names_str = ', '.join(names)
-                sys.stdout.write(f'About to delete instances: {names_str}\n')
-                answer = input('Continue? [y/n] > ').lower()
-            if answer in ('y', 'yes'):
-                clones = []
-                templates = []
-                for name in names:
-                    instance = Instance(name)
-                    if 'cloned' in instance.meta:
-                        clones.append(instance)
-                    else:
-                        templates.append(instance)
-                for instance in clones:
-                    instance.delete()
-                for instance in templates:
-                    instance.delete()
+
+    if not args.name:
+        delete_all(args)
+    elif Instance.exists(args.name):
+        instance = Instance(args.name)
+        instance.delete()
+
+def delete_all(args):
+    # Remove clones first, then templates.
+    clones = []
+    templates = []
+    for instance in Instance.all():
+        if instance.is_template():
+            templates.append(instance)
+        else:
+            clones.append(instance)
+    if not args.yes:
+        names = []
+        names.extend([i.name for i in clones])
+        names.extend([i.name for i in templates])
+        names = ', '.join(names)
+        sys.stdout.write(f'About to delete: {names}\n')
+        answer = input('Continue? [y/n] > ').lower()
+        if answer not in ('y', 'yes'):
+            return # bail
+    for instance in clones:
+        instance.delete()
+    for instance in templates:
+        instance.delete()
 
 def login(args):
     """
