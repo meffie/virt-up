@@ -107,7 +107,7 @@ os-type = linux
 os-variant =  ubuntu18.04
 arch = x86_64
 virt-builder-args = --install "sudo,policykit-1,qemu-guest-agent"
-                    --firstboot "/tmp/virt-up/scripts/fixup-network-interfaces.sh"
+                    --firstboot "/tmp/virt-up/scripts/fixup-netplan-netcfg.sh"
 virt-sysprep-args = --run-command "/usr/sbin/dpkg-reconfigure -f noninteractive openssh-server"
 virt-install-args = --channel unix,mode=bind,path=/var/lib/libvirt/qemu/guest01.agent,target_type=virtio,name=org.qemu.guest_agent.0
 
@@ -143,6 +143,21 @@ elif test "x$old_iface" != "x$new_iface"; then
     echo "Bringing up interface $new_iface"
     ifup "$new_iface"
 fi
+"""
+    },
+    {
+        'name': 'fixup-netplan-netcfg.sh',
+        'contents': r"""#!/bin/sh
+new_iface=`ip -o -a link | cut -f2 -d: | tr -d ': ' | grep '^en' | tail -1`
+echo "new_iface:$new_iface"
+if test "x$new_iface" = "x"; then
+    echo "Enable to detect primary interface." >&2
+    exit 1
+fi
+echo "Setting interface name to $new_iface in /etc/netplan/01-netcfg.yaml"
+sed -i -e "s/^    en.*:/    $new_iface:/" /etc/netplan/01-netcfg.yaml
+echo "Bringing up interface $new_iface"
+netplan apply
 """
     },
 ]
