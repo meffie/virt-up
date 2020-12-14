@@ -1,5 +1,4 @@
 ---
-# This is a debian specific playbook
 - name: Development
   hosts: all
   tasks:

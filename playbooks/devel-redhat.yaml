@@ -1,0 +1,52 @@
+---
+- name: Development
+  hosts: all
+  tasks:
+    - name: Update kernel
+      become: yes
+      yum:
+        state: latest
+        name:
+          - kernel
+      register: update_kernel_results
+
+    - name: Reboot
+      become: yes
+      reboot:
+        reboot_timeout: 600
+      when: update_kernel_results.changed
+
+    - name: Re-gather facts
+      setup:
+
+    - name: Install kernel headers
+      become: yes
+      apt:
+        state: present
+        name:
+          - "kernel-devel-uname-r == {{ ansible_kernel }}"
+
+    - name: Install development packages
+      become: yes
+      apt:
+        state: present
+        name:
+          - autoconf
+          - automake
+          - bison
+          - flex
+          - fuse-devel
+          - gcc
+          - git
+          - glibc-devel
+          - krb5-devel
+          - libtool
+          - make
+          - ncurses-devel
+          - pam-devel
+          - perl-devel
+          - perl-ExtUtils-Embed
+          - redhat-rpm-config
+          - rpm-build
+          - swig
+          - wget
