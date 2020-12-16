@@ -21,14 +21,14 @@
 
     - name: Install kernel headers
       become: yes
-      apt:
+      yum:
         state: present
         name:
           - "kernel-devel-uname-r == {{ ansible_kernel }}"
 
     - name: Install development packages
       become: yes
-      apt:
+      yum:
         state: present
         name:
           - autoconf
