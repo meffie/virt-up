@@ -590,16 +590,29 @@ class Instance:
             self.start()
 
         address_source = self.meta.get('address-source', 'agent')
-        if address_source == 'agent':
-            address = self._address_from_ia(source='agent')
-        elif address_source == 'lease':
-            address = self._address_from_ia(source='lease')
-        elif address_source == 'arp':
-            address = self._address_from_arp()
-        elif address_source == 'dns':
-            address = self._address_from_dns()
-        else:
-            raise ValueError(f"Invalid address_source '{address_source}' in instance '{self.name}'.")
+        for retries in range(120, -1, -1):
+            if address_source == 'agent':
+                address = self._address_from_ia(source='agent')
+            elif address_source == 'lease':
+                address = self._address_from_ia(source='lease')
+            elif address_source == 'arp':
+                address = self._address_from_arp()
+            elif address_source == 'dns':
+                address = self._address_from_dns()
+            else:
+                raise ValueError(f"Invalid address_source '{address_source}' in instance '{self.name}'.")
+
+            if address:
+                try:
+                    sh.ping('-c', '2', address)
+                    break
+                except:
+                    pass
+
+            if retries > 0:
+                suffix = 'ies' if retries > 1 else 'y'
+                log.debug(f"Waiting for address to settle and ping; {retries} retr{suffix} left.")
+                time.sleep(2)
 
         self._update_meta({'address': address})
         log.info(f"Instance '{self.name}' has address '{address}'.")
