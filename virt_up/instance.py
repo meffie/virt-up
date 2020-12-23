@@ -537,6 +537,18 @@ class Instance:
                 arp[mac] = address
         return arp
 
+    def _ping(self, address):
+        """
+        Verify the address is pingable.
+        """
+        ping = sh.Command('ping')
+        try:
+            ping('-c', 2, address)
+            return True
+        except sh.ErrorReturnCode as e:
+            log.debug(f"Unable to ping address '{address}'; ping code {e.exit_code}.")
+            return False
+
     def _address_from_arp(self):
         """
         Attempt to retreive the instance address from the arp cache.
@@ -546,7 +558,7 @@ class Instance:
         for retries in range(120, -1, -1):
             arp = self._arp_table()
             address = arp.get(mac)
-            if address:
+            if address and self._ping(address):
                 break
             if retries > 0:
                 suffix = 'ies' if retries > 1 else 'y'
@@ -568,7 +580,7 @@ class Instance:
                 ai = socket.getaddrinfo(hostname, 22, family=socket.AF_INET, proto=socket.IPPROTO_TCP)
                 if ai:
                     address = ai[0][4][0]
-                if address:
+                if address and self._ping(address):
                     break
             except:
                 pass
