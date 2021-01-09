@@ -45,7 +45,7 @@ virt-install-args =
     },
     # Default template definitions.
     {
-        'filename': 'templates.cfg',
+        'filename': 'templates.d/generic.cfg',
         'verbatim': False,
         'contents': """
 [generic-centos-8]

@@ -107,7 +107,7 @@ class Settings:
     """
     def __init__(self, template=None):
         # Load local site settings.
-        self.settings = self._load('settings')
+        self.settings = self._load('settings.cfg')
         self.site = self.settings.get('site', {})
         self.pool = self.site.get('pool', 'default')
         self.username = self.site.get('username', 'virt')
@@ -118,7 +118,7 @@ class Settings:
         self.instance_playbook = self.site.get('instance-playbook', '')
 
         # Load template definitions.
-        self.templates = self._load('templates')
+        self.templates = self._load('templates.d/*.cfg')
         if template is None:
             self.template = {}
             self.template_name = None
@@ -135,11 +135,16 @@ class Settings:
             self.os_variant = self.template.get('os-variant')
             self.address_source = self.template.get('address-source', self.address_source)
 
-    def _load(self, name):
-        system_file = f'/etc/virt-up/{name}.cfg'
-        user_file = f'{virtup_config_home}/{name}.cfg'
+    def _load(self, pattern):
+        """
+        Load settings from config files.
+        """
+        system_files = glob.glob(f'/etc/virt-up/{pattern}')
+        user_files = glob.glob(f'{virtup_config_home}/{pattern}')
         parser = configparser.ConfigParser()
-        parser.read([system_file, user_file])
+        filesread = parser.read(system_files + user_files)
+        for f in filesread:
+            log.debug(f"Read: {f}")
 
         # Convert to a regular dict and remove newlines.
         settings = {}
