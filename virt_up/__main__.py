@@ -20,6 +20,7 @@
 
 import argparse
 import logging
+import os
 import sys
 
 from virt_up import __version__
@@ -27,6 +28,7 @@ from virt_up.instance import Instance, Settings
 
 usage="""\
 virt-up [--name] <name> [--template <template>] [options]
+               --init [--force]
                --list [--all] | --list-templates
                --login [--name] <name> [--sftp] [--command "<command>"]
                --delete [--name] <name> | --delete --all
@@ -50,6 +52,21 @@ def get_log_level(args):
     if args.quiet:
         return logging.WARN
     return logging.INFO
+
+def init(args):
+    """
+    Initialize configuration files.
+    """
+    import virt_up.config
+    import virt_up.instance
+    if os.getuid() == 0:
+        dest = '/etc/virt-up'
+    else:
+        dest = virt_up.instance.virtup_config_home
+    sys.stdout.write(f"Initializing files in {dest}\n")
+    wrote = virt_up.config.create_files(dest, force=args.force)
+    for w in wrote:
+        sys.stdout.write(f"Wrote: {w}\n")
 
 def list_instances(args):
     """
@@ -155,6 +172,7 @@ def main():
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--version', action='version', version='%(prog)s '+ __version__)
+    group.add_argument('--init', action='store_true', help='initialize configuration files')
     group.add_argument('--list', action='store_true', help='list instances')
     group.add_argument('--list-templates', action='store_true', help='list template names')
     group.add_argument('--delete', action='store_true', help='delete the instance')
@@ -183,6 +201,7 @@ def main():
     parser.add_argument('--yes', action='store_true', help='answer yes to interactive questions')
     parser.add_argument('--quiet', action='store_true', help='show less output')
     parser.add_argument('--debug', action='store_true', help='show debug tracing')
+    parser.add_argument('--force', action='store_true', help='overwrite files')
 
     args = parser.parse_args()
     if args.name_flag:
@@ -192,7 +211,9 @@ def main():
         level=get_log_level(args),
         format='%(message)s')
 
-    if args.list:
+    if args.init:
+        init(args)
+    elif args.list:
         list_instances(args)
     elif args.list_templates:
         list_templates(args)
