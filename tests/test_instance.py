@@ -68,7 +68,7 @@ def test_query_storage_pool_path():
     assert(os.path.exists(path)) # Since running locally.
 
 @pytest.mark.parametrize('template', ['generic-centos-8', 'generic-debian-10'])
-def test_build(template):
+def test_build(config_files, template):
     name = f'_test_virt_up_build_instance-{template}'
     assert(not Instance.exists(name))
     instance = Instance.build(name, template)
@@ -82,7 +82,7 @@ def test_build(template):
     instance.delete()
     assert(not Instance.exists(name))
 
-def test_clone():
+def test_clone(config_files):
     source_name = '_test_virt_up_instance_2'
     target_name = '_test_virt_up_instance_3'
 
@@ -106,7 +106,7 @@ def test_clone():
     source.delete()
     assert(not Instance.exists(source_name))
 
-def test_address_source_arp():
+def test_address_source_arp(config_files):
     template = 'generic-centos-8'
     name = f'_test_virt_up_instance_arp-{template}'
 

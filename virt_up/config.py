@@ -22,10 +22,14 @@
 Built-in virt-up settings.
 """
 
-#
-# Default values for site-specific settings.
-#
-SETTINGS = """
+import os
+
+DATA = [
+    # Default values for site-specific settings.
+    {
+        'filename': 'settings.cfg',
+        'verbatim': False,
+        'contents': """
 [site]
 pool = default
 username = virt
@@ -38,11 +42,12 @@ virt-builder-args =
 virt-sysprep-args =
 virt-install-args =
 """
-
-#
-# Default template definitions.
-#
-TEMPLATES = """
+    },
+    # Default template definitions.
+    {
+        'filename': 'templates.cfg',
+        'verbatim': False,
+        'contents': """
 [generic-centos-8]
 desc = CentOS 8.2
 os-version = centos-8.2
@@ -121,13 +126,13 @@ virt-builder-args = --install "sudo,qemu-guest-agent"
 virt-sysprep-args =
 virt-install-args = --channel unix,mode=bind,path=/var/lib/libvirt/qemu/guest01.agent,target_type=virtio,name=org.qemu.guest_agent.0
 """
+    },
 
-#
-# virt-builder --run/--firstboot scripts
-#
-SCRIPTS = [
+    # virt-builder --run/--firstboot scripts
     {
-        'name': 'fixup-network-interfaces.sh',
+        'name': 'fixup-network-interfaces.sh', # deprecated
+        'filename': 'scripts/fixup-network-interfaces.sh',
+        'verbatim': True,
         'contents': r"""#!/bin/sh
 old_iface=`awk '/^iface en/ {print $2}' /etc/network/interfaces | tail -1`
 new_iface=`ip -o -a link | cut -f2 -d: | tr -d ': ' | grep '^en' | tail -1`
@@ -146,7 +151,9 @@ fi
 """
     },
     {
-        'name': 'fixup-netplan-netcfg.sh',
+        'name': 'fixup-netplan-netcfg.sh', # deprecated
+        'filename': 'scripts/fixup-netplan-netcfg.sh',
+        'verbatim': True,
         'contents': r"""#!/bin/sh
 new_iface=`ip -o -a link | cut -f2 -d: | tr -d ': ' | grep '^en' | tail -1`
 echo "new_iface:$new_iface"
@@ -160,4 +167,147 @@ echo "Bringing up interface $new_iface"
 netplan apply
 """
     },
+
+    # Playbooks
+    {
+        'filename': 'playbooks/devel-debian.yaml',
+        'verbatim': True,
+        'contents': """\
+---
+- name: Development
+  hosts: all
+  tasks:
+    - name: Update kernel
+      become: yes
+      apt:
+        state: latest
+        name: 'linux-image*'
+        only_upgrade: yes
+        update_cache: yes
+      register: update_kernel_results
+
+    - name: Reboot
+      become: yes
+      reboot:
+        reboot_timeout: 600
+      when: update_kernel_results.changed
+
+    - name: Re-gather facts
+      setup:
+
+    - name: Install kernel headers
+      become: yes
+      apt:
+        state: present
+        name:
+          - linux-headers-{{ ansible_kernel }}
+
+    - name: Install development packages
+      become: yes
+      apt:
+        state: present
+        name:
+          - autoconf
+          - automake
+          - bison
+          - flex
+          - gcc
+          - git
+          - libfuse-dev
+          - libgc-dev
+          - libkrb5-dev
+          - libncurses5-dev
+          - libperl-dev
+          - libtool
+          - make
+          - swig
+          - wget
+        """
+    },
+    {
+        'filename': 'playbooks/devel-redhat.yaml',
+        'verbatim': True,
+        'contents': """\
+---
+- name: Development
+  hosts: all
+  tasks:
+    - name: Update kernel
+      become: yes
+      yum:
+        state: latest
+        name:
+          - kernel
+      register: update_kernel_results
+
+    - name: Reboot
+      become: yes
+      reboot:
+        reboot_timeout: 600
+      when: update_kernel_results.changed
+
+    - name: Re-gather facts
+      setup:
+
+    - name: Install kernel headers
+      become: yes
+      yum:
+        state: present
+        name:
+          - "kernel-devel-uname-r == {{ ansible_kernel }}"
+
+    - name: Install development packages
+      become: yes
+      yum:
+        state: present
+        name:
+          - autoconf
+          - automake
+          - bison
+          - flex
+          - fuse-devel
+          - gcc
+          - git
+          - glibc-devel
+          - krb5-devel
+          - libtool
+          - make
+          - ncurses-devel
+          - pam-devel
+          - perl-devel
+          - perl-ExtUtils-Embed
+          - redhat-rpm-config
+          - rpm-build
+          - swig
+          - wget
+        """
+    },
 ]
+
+def create_files(path, force=False):
+    """
+    Create configuration files.
+    """
+    wrote = []
+    context = {
+        'scripts': os.path.join(path, 'scripts'),
+        'playbooks': os.path.join(path, 'playbooks'),
+    }
+    for f in DATA:
+        filename = os.path.join(path, f['filename'])
+        if force or (not os.path.exists(filename)):
+            dirname = os.path.dirname(filename)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+            with open(filename, 'w') as fp:
+                text = f['contents']
+                if not f['verbatim']:
+                    text = text.replace('/tmp/virt-up/scripts', paths['scripts']) # deprecated
+                    text = text.format(**context)
+                fp.write(text)
+                wrote.append(filename)
+    return wrote
+
+SETTINGS = DATA[0]['contents'] # deprecated
+TEMPLATES = DATA[1]['contents'] # deprecated
+SCRIPTS = DATA[2:4] # deprecated
