@@ -48,8 +48,14 @@ log = logging.getLogger(__name__)
 
 # Environment variables
 libvirt_uri = os.environ.get('LIBVIRT_DEFAULT_URI', 'qemu:///session')
-xdg_config_home = os.path.expanduser(os.environ.get('XDG_CONFIG_HOME', '~/.config'))
-xdg_data_home = os.path.expanduser(os.environ.get('XDG_DATA_HOME', '~/.local/share'))
+
+virtup_config_home = os.path.expanduser(
+    os.environ.get('VIRTUP_CONFIG_HOME',
+    os.path.join(os.environ.get('XDG_CONFIG_HOME', '~/.config'), 'virt-up')))
+
+virtup_data_home = os.path.expanduser(
+    os.environ.get('VIRTUP_DATA_HOME',
+    os.path.join(os.environ.get('XDG_DATA_HOME', '~/.local/share'), 'virt-up')))
 
 # Helpers
 def rm_f(path):
@@ -133,7 +139,7 @@ class Settings:
 
     def _load(self, name, defaults):
         system_file = f'/etc/virt-up/{name}.cfg'
-        user_file = f'{xdg_config_home}/virt-up/{name}.cfg'
+        user_file = f'{virtup_config_home}/{name}.cfg'
         parser = configparser.ConfigParser()
         parser.read_string(defaults)
         parser.read([system_file, user_file])
@@ -231,7 +237,7 @@ class Creds:
         """
         Generate a ssh key pair for passwordless ssh login.
         """
-        ssh_identity = f'{xdg_data_home}/virt-up/sshkeys/{name}'
+        ssh_identity = f'{virtup_data_home}/sshkeys/{name}'
         if os.path.exists(ssh_identity):
             log.debug(f"SSH key file '{ssh_identity}' already exists.")
             if not os.path.exists(f'{ssh_identity}.pub'):
@@ -244,7 +250,7 @@ class Creds:
         return ssh_identity
 
 class MacAddresses:
-    filename = f'{xdg_data_home}/virt-up/macaddrs.json'
+    filename = f'{virtup_data_home}/macaddrs.json'
 
     """
     Saved instance mac addresses.
@@ -303,7 +309,7 @@ class Instance:
     """
     def __init__(self, name, meta=None):
         self.name = name
-        self.metafile = f'{xdg_data_home}/virt-up/instance/{name}.json'
+        self.metafile = f'{virtup_data_home}/instance/{name}.json'
         self.meta = {}
         self._mac = None
         self._disks = None
@@ -645,7 +651,7 @@ class Instance:
 
     @classmethod
     def all(cls):
-        pattern = f'{xdg_data_home}/virt-up/instance/*.json'
+        pattern = f'{virtup_data_home}/instance/*.json'
         for path in glob.glob(pattern):
             name = os.path.basename(path).replace('.json', '')
             yield Instance(name)
@@ -671,7 +677,7 @@ class Instance:
         Returns true if the instance already exists, that is
         the domain and metadata file both exist.
         """
-        metafile = f'{xdg_data_home}/virt-up/instance/{name}.json'
+        metafile = f'{virtup_data_home}/instance/{name}.json'
         return os.path.exists(metafile) and cls._domain_exists(name)
 
     @classmethod
@@ -950,7 +956,7 @@ class Instance:
         """
         Create an ansible inventory file for the cloned instances.
         """
-        filename = f'{xdg_data_home}/virt-up/inventory.yaml'
+        filename = f'{virtup_data_home}/inventory.yaml'
         ssh_options = [
             ('ControlMaster', 'auto'),
             ('ControlPersist', '60s'),
@@ -1064,7 +1070,7 @@ class Instance:
         """
         Run an ansible playbook on this instance.
         """
-        inventory = f'{xdg_data_home}/virt-up/inventory.yaml'
+        inventory = f'{virtup_data_home}/inventory.yaml'
         address = self.address()
         if not address:
             log.warning(f"Skipping playbook; address for '{self.name}' is not available.")

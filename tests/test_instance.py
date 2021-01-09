@@ -22,7 +22,7 @@ import os
 
 import pytest
 
-from virt_up.instance import xdg_data_home
+from virt_up.instance import virtup_data_home
 from virt_up.instance import query_storage_pool
 from virt_up.instance import MacAddresses
 from virt_up.instance import Creds
@@ -48,7 +48,7 @@ def test_mac_registry():
 
 def test_generate_ssh_keys():
     name = '_test_virt_up'
-    ssh_identity = f'{xdg_data_home}/virt-up/sshkeys/{name}'
+    ssh_identity = f'{virtup_data_home}/sshkeys/{name}'
     remove(ssh_identity)
     remove(f'{ssh_identity}.pub')
     creds = Creds(name)
