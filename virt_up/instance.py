@@ -42,8 +42,6 @@ import xml.etree.ElementTree
 import sh
 import libvirt
 
-from .config import SETTINGS, TEMPLATES, SCRIPTS
-
 log = logging.getLogger(__name__)
 
 # Environment variables
@@ -109,7 +107,7 @@ class Settings:
     """
     def __init__(self, template=None):
         # Load local site settings.
-        self.settings = self._load('settings', SETTINGS)
+        self.settings = self._load('settings')
         self.site = self.settings.get('site', {})
         self.pool = self.site.get('pool', 'default')
         self.username = self.site.get('username', 'virt')
@@ -120,7 +118,7 @@ class Settings:
         self.instance_playbook = self.site.get('instance-playbook', '')
 
         # Load template definitions.
-        self.templates = self._load('templates', TEMPLATES)
+        self.templates = self._load('templates')
         if template is None:
             self.template = {}
             self.template_name = None
@@ -137,11 +135,10 @@ class Settings:
             self.os_variant = self.template.get('os-variant')
             self.address_source = self.template.get('address-source', self.address_source)
 
-    def _load(self, name, defaults):
+    def _load(self, name):
         system_file = f'/etc/virt-up/{name}.cfg'
         user_file = f'{virtup_config_home}/{name}.cfg'
         parser = configparser.ConfigParser()
-        parser.read_string(defaults)
         parser.read([system_file, user_file])
 
         # Convert to a regular dict and remove newlines.
@@ -728,16 +725,6 @@ class Instance:
             raise FileExistsError(f"Domain '{name}' without metadata already exists.")
         if os.path.exists(image):
             raise FileExistsError(f"Image file '{image}' already exists.")
-
-        # Install virt-builder --run/--firstboot scripts.
-        for script in SCRIPTS:
-            path = os.path.join('/tmp/virt-up/scripts', script['name'])
-            if not os.path.exists(path):
-                if not os.path.exists('/tmp/virt-up/scripts'):
-                    os.makedirs('/tmp/virt-up/scripts')
-                with open(path, 'w') as f:
-                    f.write(script['contents'])
-                log.info('Wrote: %s', path)
 
         # Generate the ssh keys. Generate the passwords if not provided.
         if not user:

@@ -92,7 +92,7 @@ os-type = linux
 os-variant =  debian10
 arch = x86_64
 virt-builder-args = --install "sudo,qemu-guest-agent"
-                    --firstboot "/tmp/virt-up/scripts/fixup-network-interfaces.sh"
+                    --firstboot "{scripts}/fixup-network-interfaces.sh"
 virt-sysprep-args = --run-command "/usr/sbin/dpkg-reconfigure -f noninteractive openssh-server"
 
 [generic-debian-9]
@@ -102,7 +102,7 @@ os-type = linux
 os-variant =  debian9
 arch = x86_64
 virt-builder-args = --install "sudo,qemu-guest-agent"
-                    --firstboot "/tmp/virt-up/scripts/fixup-network-interfaces.sh"
+                    --firstboot "{scripts}/fixup-network-interfaces.sh"
 virt-sysprep-args = --run-command "/usr/sbin/dpkg-reconfigure -f noninteractive openssh-server"
 
 [generic-ubuntu-18]
@@ -112,7 +112,7 @@ os-type = linux
 os-variant =  ubuntu18.04
 arch = x86_64
 virt-builder-args = --install "sudo,policykit-1,qemu-guest-agent"
-                    --firstboot "/tmp/virt-up/scripts/fixup-netplan-netcfg.sh"
+                    --firstboot "{scripts}/fixup-netplan-netcfg.sh"
 virt-sysprep-args = --run-command "/usr/sbin/dpkg-reconfigure -f noninteractive openssh-server"
 virt-install-args = --channel unix,mode=bind,path=/var/lib/libvirt/qemu/guest01.agent,target_type=virtio,name=org.qemu.guest_agent.0
 
@@ -130,7 +130,6 @@ virt-install-args = --channel unix,mode=bind,path=/var/lib/libvirt/qemu/guest01.
 
     # virt-builder --run/--firstboot scripts
     {
-        'name': 'fixup-network-interfaces.sh', # deprecated
         'filename': 'scripts/fixup-network-interfaces.sh',
         'verbatim': True,
         'contents': r"""#!/bin/sh
@@ -151,7 +150,6 @@ fi
 """
     },
     {
-        'name': 'fixup-netplan-netcfg.sh', # deprecated
         'filename': 'scripts/fixup-netplan-netcfg.sh',
         'verbatim': True,
         'contents': r"""#!/bin/sh
@@ -302,12 +300,7 @@ def create_files(path, force=False):
             with open(filename, 'w') as fp:
                 text = f['contents']
                 if not f['verbatim']:
-                    text = text.replace('/tmp/virt-up/scripts', paths['scripts']) # deprecated
                     text = text.format(**context)
                 fp.write(text)
                 wrote.append(filename)
     return wrote
-
-SETTINGS = DATA[0]['contents'] # deprecated
-TEMPLATES = DATA[1]['contents'] # deprecated
-SCRIPTS = DATA[2:4] # deprecated
