@@ -127,18 +127,18 @@ virt-install-args = --channel unix,mode=bind,path=/var/lib/libvirt/qemu/guest01.
         'filename': 'scripts/fixup-network-interfaces.sh',
         'verbatim': True,
         'contents': r"""#!/bin/sh
-old_iface=`awk '/^iface en/ {print $2}' /etc/network/interfaces | tail -1`
-new_iface=`ip -o -a link | cut -f2 -d: | tr -d ': ' | grep '^en' | tail -1`
+old_iface=`awk '$1=="iface" && $2!="lo" && $3=="inet" {print $2}' /etc/network/interfaces | tail -1`
+new_iface=`ip -o -a link | awk '$2!="lo:" {print $2}' | tr -d : | tail -1`
 
-echo "old_iface:$old_iface"
-echo "new_iface:$new_iface"
+echo "* Old interface is '$old_iface'."
+echo "* New interface is '$new_iface'."
 
 if test "x$new_iface" = "x"; then
-    echo "Enable to detect primary interface." >&2
+    echo "* Enable to detect primary interface." >&2
 elif test "x$old_iface" != "x$new_iface"; then
-    echo "Changing $old_iface to $new_iface in /etc/network/interfaces"
+    echo "* Changing '$old_iface' to '$new_iface' in '/etc/network/interfaces'."
     sed -i -e "s/$old_iface/$new_iface/" /etc/network/interfaces
-    echo "Bringing up interface $new_iface"
+    echo "* Bringing up interface '$new_iface'."
     ifup "$new_iface"
 fi
 """
@@ -147,15 +147,15 @@ fi
         'filename': 'scripts/fixup-netplan-netcfg.sh',
         'verbatim': True,
         'contents': r"""#!/bin/sh
-new_iface=`ip -o -a link | cut -f2 -d: | tr -d ': ' | grep '^en' | tail -1`
-echo "new_iface:$new_iface"
+new_iface=`ip -o -a link | awk '$2!="lo:" {print $2}' | tr -d : | tail -1`
+echo "* New interface is '$new_iface'."
 if test "x$new_iface" = "x"; then
-    echo "Enable to detect primary interface." >&2
+    echo "* Unable to detect primary interface." >&2
     exit 1
 fi
-echo "Setting interface name to $new_iface in /etc/netplan/01-netcfg.yaml"
+echo "* Setting interface name to '$new_iface' in '/etc/netplan/01-netcfg.yaml'."
 sed -i -e "s/^    en.*:/    $new_iface:/" /etc/netplan/01-netcfg.yaml
-echo "Bringing up interface $new_iface"
+echo "* Bringing up interface '$new_iface'."
 netplan apply
 """
     },
