@@ -33,14 +33,8 @@ DATA = [
 [site]
 pool = default
 username = virt
-dns-domain =
 address-source = agent
 image-format = qcow2
-template-playbook =
-instance-playbook =
-virt-builder-args =
-virt-sysprep-args =
-virt-install-args =
 """
     },
     # Default template definitions.

@@ -80,11 +80,8 @@ def list_templates(args):
     """
     List available template definitions.
     """
-    settings = Settings()
-    for name in sorted(settings.templates.keys()):
-        template = settings.templates[name]
-        template['name'] = name
-        sys.stdout.write("{name: <24} {desc: <30} {arch}\n".format(**template))
+    for s in Settings.all():
+        sys.stdout.write(f"{s.template_name: <24} {s.desc: <30} {s.arch}\n")
 
 def delete(args):
     """

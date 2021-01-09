@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Sine Nomine Associates
+# Copyright (c) 2020-2021 Sine Nomine Associates
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -27,11 +27,12 @@ import configparser
 import crypt
 import datetime
 import fcntl
-import io
 import glob
+import io
 import json
 import logging
 import os
+import pprint
 import secrets
 import shlex
 import socket
@@ -102,39 +103,44 @@ libvirt.registerErrorHandler(f=_libvirt_callback, ctx=None)
 
 class Settings:
     """
-    Configuration settings read from the settings (ini) file
-    for the local libvirt settings and OS specific settings.
+    Configuration settings for a given template definition name.
     """
-    def __init__(self, template=None):
-        # Load local site settings.
-        self.settings = self._load('settings.cfg')
-        self.site = self.settings.get('site', {})
-        self.pool = self.site.get('pool', 'default')
-        self.username = self.site.get('username', 'virt')
-        self.image_format = self.site.get('image-format', 'qcow2')
-        self.dns_domain = self.site.get('dns-domain', '')
-        self.address_source = self.site.get('address-source', 'agent')
-        self.template_playbook = self.site.get('template-playbook', '')
-        self.instance_playbook = self.site.get('instance-playbook', '')
+    def __init__(self, name):
+        """
+        Get template definition settings.
+        """
+        # Load common settings.
+        settings = self._load('settings.cfg')
+        site = settings.get('site', {})
 
-        # Load template definitions.
-        self.templates = self._load('templates.d/*.cfg')
-        if template is None:
-            self.template = {}
-            self.template_name = None
-            self.ov_version = None
-            self.os_variant = None
-        else:
-            if not template in self.templates:
-                raise LookupError(f"Template '{template}' not found in settings.")
-            self.template = self.templates[template]
-            self.template_name = template
-            self.template_playbook = self.template.get('template-playbook')
-            self.instance_playbook = self.template.get('instance-playbook')
-            self.os_version = self.template.get('os-version')
-            self.os_variant = self.template.get('os-variant')
-            self.address_source = self.template.get('address-source', self.address_source)
+        # Load template specific settings.
+        templates = self._load('templates.d/*.cfg')
+        if not name in templates:
+            raise LookupError(f"Template '{name}' not found in settings.")
 
+        template = templates[name]
+        def get(option, default):
+            return template.get(option, site.get(option, default))
+
+        self.template_name = name
+        self.desc = get('desc', '')
+        self.os_version = get('os-version', '')
+        self.os_variant = get('os-variant', '')
+        self.arch = get('arch', '')
+        self.pool = get('pool', 'default')
+        self.username = get('username', 'virt')
+        self.image_format = get('image-format', 'qcow2')
+        self.dns_domain = get('dns-domain', '')
+        self.address_source = get('address-source', 'agent')
+        self.virt_builder_args = shlex.split(get('virt-builder-args', ''))
+        self.virt_sysprep_args = shlex.split(get('virt-sysprep-args', ''))
+        self.virt_install_args = shlex.split(get('virt-install-args', ''))
+        self.cp_args = shlex.split(get('cp-args', ''))
+        self.template_playbook = get('template-playbook', '')
+        self.instance_playbook = get('instance-playbook', '')
+        log.debug("Settings: %s", pprint.pformat(vars(self)))
+
+    @classmethod
     def _load(self, pattern):
         """
         Load settings from config files.
@@ -155,18 +161,13 @@ class Settings:
 
         return settings
 
-    def extra_args(self, command, **variables):
+    @classmethod
+    def all(cls):
         """
-        Extra command line arguments for the local hypervisor and the target
-        template definition.
+        Generator to list each template definition.
         """
-        args = []
-        for section in ('site', 'template'):
-            settings = getattr(self, section, {})
-            args_str = settings.get(f'{command}-args', '')
-            args_str = args_str.format(**variables)
-            args.extend(shlex.split(args_str))
-        return args
+        for name in cls._load('templates.d/*.cfg'):
+            yield Settings(name)
 
 class LockFile:
     """
@@ -748,7 +749,7 @@ class Instance:
             hostname = f'{name}.{dns_domain}'
         else:
             hostname = name
-        extra_args = settings.extra_args('virt-builder')
+        extra_args = settings.virt_builder_args
         if size:
             extra_args.extend(['--size', size])
 
@@ -773,8 +774,7 @@ class Instance:
         mac = maddrs.lookup(name)
         if mac:
             optional_args.extend(['--mac', mac])
-        extra_args = settings.extra_args('virt-install')
-
+        extra_args = settings.virt_install_args
         with LockFile():
             log.info(f"Importing instance '{name}'.")
             virt_install(
@@ -867,7 +867,7 @@ class Instance:
             if settings.image_format == 'qcow2':
                 qemu_img.create('-f', 'qcow2', '-F', 'qcow2', '-b', source_image, target_image)
             else:
-                extra_args = settings.extra_args('cp')
+                extra_args = settings.cp_args
                 cp(*extra_args, source_image, target_image)
 
         # Setup virt-sysprep args.
@@ -879,7 +879,7 @@ class Instance:
             else:
                 hostname = target
 
-        extra_args = settings.extra_args('virt-sysprep')
+        extra_args = settings.virt_sysprep_args
 
         with LockFile():
             log.info(f"Preparing target image '{target_image}'.")
@@ -904,7 +904,7 @@ class Instance:
         if mac:
             optional_args.extend(['--mac', mac])
 
-        extra_args = settings.extra_args('virt-install')
+        extra_args = settings.virt_install_args
 
         with LockFile():
             log.info(f"Importing instance '{target}'.")

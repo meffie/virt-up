@@ -20,28 +20,15 @@
 
 from virt_up.instance import Settings
 
-def test_general_settings(config_files):
-    settings = Settings()
-    assert(settings.pool is not None)
-
 def test_template_settings(config_files):
     name = 'generic-centos-8'
     settings = Settings(name)
     assert(settings.os_variant is not None)
     assert(settings.os_variant == 'centos8')
-    assert(settings.template.get('virt-builder-args') is not None)
-    assert(settings.template.get('virt-builder-args') != '')
+    assert(settings.virt_builder_args is not None)
+    assert(settings.virt_builder_args != '')
 
 def test_list_templates(config_files):
-    settings = Settings()
-    names = settings.templates.keys()
-    assert(names is not None)
-    assert(len(names) > 0)
-    assert('generic-centos-8' in names)
-
-def test_extra_args(config_files):
-    name = 'generic-centos-8'
-    settings = Settings(name)
-    args = settings.extra_args('virt-builder')
-    assert(args)
-    assert('--selinux-relabel' in args)
+    all_ = list(Settings.all())
+    assert(all_)
+    assert(len(all_) > 0)
