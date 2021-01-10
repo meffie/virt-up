@@ -17,7 +17,6 @@ setup(
     license='BSD',
     url='https://github.com/meffie/virt-up',
     packages=['virt_up'],
-    requires_python='>=3.6',
     setup_requires=['wheel'],
     install_requires=['sh', 'libvirt-python'],
     entry_points={
