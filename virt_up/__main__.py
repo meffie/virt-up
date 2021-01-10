@@ -29,7 +29,7 @@ from virt_up.instance import Instance, Settings
 usage="""virt-up [--name] <name> [--template <template>] [options]
        virt-up --init [--force]
        virt-up --list [--all]
-       virt-up --show-templates
+       virt-up --show-templates | --show-paths
        virt-up --login [--name] <name> [--sftp] [--command "<command>"]
        virt-up --delete [--name] <name> | --delete --all
 """
@@ -82,6 +82,18 @@ def show_templates(args):
     """
     for s in Settings.all():
         sys.stdout.write(f"{s.template_name: <24} {s.desc: <30} {s.arch}\n")
+
+def show_paths(args):
+    """
+    Show configuration and data paths.
+    """
+    from virt_up.instance import virtup_config_home, virtup_data_home
+    virtup_playbooks = os.path.join(virtup_config_home, 'playbooks')
+    virtup_inventory = os.path.join(virtup_data_home, 'inventory.yaml')
+    sys.stdout.write(f'VIRTUP_CONFIG_HOME="{virtup_config_home}"\n')
+    sys.stdout.write(f'VIRTUP_DATA_HOME="{virtup_data_home}"\n')
+    sys.stdout.write(f'VIRTUP_PLAYBOOKS="{virtup_playbooks}"\n')
+    sys.stdout.write(f'VIRTUP_INVENTORY="{virtup_inventory}"\n')
 
 def delete(args):
     """
@@ -172,6 +184,7 @@ def main():
     group.add_argument('--init', action='store_true', help='initialize configuration files')
     group.add_argument('--list', action='store_true', help='list instances')
     group.add_argument('--show-templates', action='store_true', help='show template definitions')
+    group.add_argument('--show-paths', action='store_true', help='show configuration and data paths')
     group.add_argument('--delete', action='store_true', help='delete the instance')
     group.add_argument('--login', action='store_true', help='login to a running instance')
 
@@ -214,6 +227,8 @@ def main():
         list_instances(args)
     elif args.show_templates:
         show_templates(args)
+    elif args.show_paths:
+        show_paths(args)
     elif args.delete:
         delete(args)
     elif args.login:
