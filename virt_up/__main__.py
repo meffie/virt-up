@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Sine Nomine Associates
+# Copyright (c) 2020-2021 Sine Nomine Associates
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -26,12 +26,12 @@ import sys
 from virt_up import __version__
 from virt_up.instance import Instance, Settings
 
-usage="""\
-virt-up [--name] <name> [--template <template>] [options]
-               --init [--force]
-               --list [--all] | --list-templates
-               --login [--name] <name> [--sftp] [--command "<command>"]
-               --delete [--name] <name> | --delete --all
+usage="""virt-up [--name] <name> [--template <template>] [options]
+       virt-up --init [--force]
+       virt-up --list [--all]
+       virt-up --show-templates
+       virt-up --login [--name] <name> [--sftp] [--command "<command>"]
+       virt-up --delete [--name] <name> | --delete --all
 """
 
 log = logging.getLogger(__name__)
@@ -76,9 +76,9 @@ def list_instances(args):
         if args.all or not instance.is_template():
             sys.stdout.write(f'{instance.name}\n')
 
-def list_templates(args):
+def show_templates(args):
     """
-    List available template definitions.
+    Show available template definitions.
     """
     for s in Settings.all():
         sys.stdout.write(f"{s.template_name: <24} {s.desc: <30} {s.arch}\n")
@@ -171,7 +171,7 @@ def main():
     group.add_argument('--version', action='version', version='%(prog)s '+ __version__)
     group.add_argument('--init', action='store_true', help='initialize configuration files')
     group.add_argument('--list', action='store_true', help='list instances')
-    group.add_argument('--list-templates', action='store_true', help='list template names')
+    group.add_argument('--show-templates', action='store_true', help='show template definitions')
     group.add_argument('--delete', action='store_true', help='delete the instance')
     group.add_argument('--login', action='store_true', help='login to a running instance')
 
@@ -212,8 +212,8 @@ def main():
         init(args)
     elif args.list:
         list_instances(args)
-    elif args.list_templates:
-        list_templates(args)
+    elif args.show_templates:
+        show_templates(args)
     elif args.delete:
         delete(args)
     elif args.login:
