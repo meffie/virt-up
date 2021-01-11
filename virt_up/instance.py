@@ -1063,15 +1063,27 @@ class Instance:
         Run an ansible playbook on this instance.
         """
         inventory = f'{virtup_data_home}/inventory.yaml'
+        if not ansible:
+            log.error("Skipping playbook; 'ansible-playbook' command not found.")
+            return
+        # Search for the playbook.
+        searched = []
+        found = None
+        for p in (playbook,
+                  os.path.join(virtup_config_home, 'playbooks', playbook),
+                  os.path.join('/etc/virt-up/playbooks', playbook)):
+            searched.append(p)
+            if os.path.exists(p):
+                found = p
+                break
+        if not found:
+            searched = ' '.join(searched)
+            log.error(f"Skipping playbook; '{playbook}' file not found. Searched: {searched}.")
+            return
+        playbook = found
         address = self.address()
         if not address:
             log.warning(f"Skipping playbook; address for '{self.name}' is not available.")
             return
-        if not os.path.exists(playbook):
-            log.warning(f"Skipping playbook; '{playbook}' file not found.")
-            return
-        if not ansible:
-            log.warning("Skipping playbook; 'ansible-playbook' command not found.")
-            return
-        log.info(f"Running playbook '{playbook}'.")
+        log.info(f"Running playbook '{playbook}' on '{self.name}'.")
         ansible('-i', inventory, '--limit', self.name, playbook)

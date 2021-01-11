@@ -26,12 +26,13 @@ import sys
 from virt_up import __version__
 from virt_up.instance import Instance, Settings
 
-usage="""virt-up [--name] <name> [--template <template>] [options]
+usage="""virt-up [--name] <name> --template <template> [create-options]
+       virt-up [--name] <name> --login [--sftp|--command "<command>"]
+       virt-up [--name] <name> --playbook <playbook>
+       virt-up [--name] <name> --delete | --delete --all
        virt-up --init [--force]
        virt-up --list [--all]
        virt-up --show-templates | --show-paths
-       virt-up --login [--name] <name> [--sftp] [--command "<command>"]
-       virt-up --delete [--name] <name> | --delete --all
 """
 
 log = logging.getLogger(__name__)
@@ -148,6 +149,15 @@ def login(args):
     instance = Instance(args.name)
     instance.login(**options)
 
+def playbook(args):
+    """
+    Run an ansible playbook on the instance.
+    """
+    if not args.name:
+        die(f'<name> is required.\nusage: {usage}')
+    instance = Instance(args.name)
+    instance.run_playbook(args.playbook)
+
 def create(args):
     """
     Build a template with virt-builder if it does not exist, and then clone
@@ -187,6 +197,7 @@ def main():
     group.add_argument('--show-paths', action='store_true', help='show configuration and data paths')
     group.add_argument('--delete', action='store_true', help='delete the instance')
     group.add_argument('--login', action='store_true', help='login to a running instance')
+    group.add_argument('--playbook', help='run ansible playbook on instance')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('name', metavar='<name>', nargs='?', help='instance name')
@@ -233,6 +244,8 @@ def main():
         delete(args)
     elif args.login:
         login(args)
+    elif args.playbook:
+        playbook(args)
     else:
         create(args)
 
