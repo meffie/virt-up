@@ -38,10 +38,13 @@ Usage
 
 ::
 
-    usage: virt-up [--name] <name> [--template <template>] [options]
-                   --list [--all] | --list-templates
-                   --login [--name] <name> [--command "<command>"]
-                   --delete [--name] <name> | --delete --all
+    usage: virt-up [--name] <name> --template <template> [create-options]
+           virt-up [--name] <name> --login [--sftp|--command "<command>"]
+           virt-up [--name] <name> --playbook <playbook>
+           virt-up [--name] <name> --delete | --delete --all
+           virt-up --init [--force]
+           virt-up --list [--all]
+           virt-up --show-templates | --show-paths
 
     positional arguments:
       <name>                instance name
@@ -49,11 +52,15 @@ Usage
     optional arguments:
       -h, --help            show this help message and exit
       --version             show program's version number and exit
+      --init                initialize configuration files
       --list                list instances
-      --list-templates      list template names
+      --show-templates      show template definitions
+      --show-paths          show configuration and data paths
       --delete              delete the instance
+      --login               login to a running instance
+      --playbook PLAYBOOK   run ansible playbook on instance
       -t <template>, --template <template>
-                            template definition name (default: <name>)
+                            template name (default: <name>)
       --root-password <root-password>
                             root password (default: random)
       --user <user>         username (default: virt)
@@ -64,12 +71,19 @@ Usage
       --vcpus <vcpus>       instance vcpus (default: 1)
       --graphics <graphics>
                             instance graphics type (default: none)
+      --dns-domain <dns-domain>
+                            dns domain name
+      --sftp                --login with sftp
       --command <command>   --login ssh command
-      --no-clone            build template instance only, --name is ignored
+      --no-clone            build template instance only
+      --no-inventory        exclude instance from the virt-up ansible inventory
+                            file
       --all                 include template instances
       --yes                 answer yes to interactive questions
       --quiet               show less output
       --debug               show debug tracing
+      --force               overwrite files
+
 
 Configuration files
 ===================
