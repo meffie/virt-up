@@ -30,7 +30,7 @@ DATA = [
         'filename': 'settings.cfg',
         'verbatim': False,
         'contents': """
-[site]
+[common]
 pool = default
 username = virt
 address-source = agent

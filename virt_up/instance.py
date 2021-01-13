@@ -111,7 +111,7 @@ class Settings:
         """
         # Load common settings.
         settings = self._load('settings.cfg')
-        site = settings.get('site', {})
+        common = settings.get('common', {})
 
         # Load template specific settings.
         templates = self._load('templates.d/*.cfg')
@@ -120,7 +120,7 @@ class Settings:
 
         template = templates[name]
         def get(option, default):
-            return template.get(option, site.get(option, default))
+            return template.get(option, common.get(option, default))
 
         self.template_name = name
         self.desc = get('desc', '')
