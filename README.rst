@@ -111,6 +111,15 @@ The following fields are supported:
   The username of the user account created by **virt-up** when creating
   new template instances (default: ``virt``)
 
+**memory**
+  Instance memory, in KB. Default is 512.
+
+**vcpus**
+  Number of virtual cpus. Default is 1.
+
+**graphics**
+  Graphics type. Default is 1.
+
 **dns-domain**
   The DNS domain used for new template instance hostnames. (default: None)
 
@@ -166,6 +175,15 @@ option. The following fields are supported:
 
 **arch**
   The target architecture.
+
+**memory**
+  Instance memory, in KB. Default is set in the common section.
+
+**vcpus**
+  Number of virtual cpus. Default is set in the common section.
+
+**graphics**
+  Graphics type. Default is set in the common section.
 
 **virt-builder-args**
   Template specific extra arguments for ``virt-builder``. (default: None)

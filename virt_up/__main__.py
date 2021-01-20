@@ -208,9 +208,9 @@ def main():
     parser.add_argument('--user', metavar='<user>', help='username (default: virt)')
     parser.add_argument('--password', metavar='<password>', help='password (default: random)')
     parser.add_argument('--size', metavar='<size>', help='instance disk size (default: image size)')
-    parser.add_argument('--memory', metavar='<memory>', help='instance memory (default: 512)', default=512)
-    parser.add_argument('--vcpus', metavar='<vcpus>', help='instance vcpus (default: 1)', default=1)
-    parser.add_argument('--graphics', metavar='<graphics>', help='instance graphics type (default: none)', default='none')
+    parser.add_argument('--memory', metavar='<memory>', help='instance memory')
+    parser.add_argument('--vcpus', metavar='<vcpus>', help='instance vcpus')
+    parser.add_argument('--graphics', metavar='<graphics>', help='instance graphics type')
     parser.add_argument('--dns-domain', metavar='<dns-domain>', help='dns domain name')
 
     parser.add_argument('--sftp', action='store_true', help='--login with sftp')

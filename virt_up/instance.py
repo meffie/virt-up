@@ -130,6 +130,9 @@ class Settings:
         self.pool = get('pool', 'default')
         self.username = get('username', 'virt')
         self.image_format = get('image-format', 'qcow2')
+        self.memory = get('memory', 512)
+        self.vcpus = get('vcpus', 1)
+        self.graphics = get('graphics', 'none')
         self.dns_domain = get('dns-domain', '')
         self.address_source = get('address-source', 'agent')
         self.virt_builder_args = shlex.split(get('virt-builder-args', ''))
@@ -692,10 +695,10 @@ class Instance:
               root_password=None,
               user=None,
               password=None,
-              memory=512,
+              memory=None,
               size=None,
-              vcpus=1,
-              graphics='none',
+              vcpus=None,
+              graphics=None,
               dns_domain=None,
               **kwargs):
         """
@@ -743,6 +746,12 @@ class Instance:
         password = crypt.crypt(user_creds.password, salt)
 
         # Setup virt-builder arguments.
+        if memory is None:
+            memory = settings.memory
+        if vcpus is None:
+            vcpus = settings.vcpus
+        if graphics is None:
+            graphics = settings.graphics
         if dns_domain is None:
             dns_domain = settings.dns_domain
         if dns_domain:

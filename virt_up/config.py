@@ -33,6 +33,10 @@ DATA = [
 [common]
 pool = default
 username = virt
+memory = 512
+vcpus = 1
+grahics = none
+dns-domain =
 address-source = agent
 image-format = qcow2
 """
