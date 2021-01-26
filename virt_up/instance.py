@@ -1090,6 +1090,7 @@ class Instance:
             log.error(f"Skipping playbook; '{playbook}' file not found. Searched: {searched}.")
             return
         playbook = found
+        self.wait_for_port(22)
         address = self.address()
         if not address:
             log.warning(f"Skipping playbook; address for '{self.name}' is not available.")
