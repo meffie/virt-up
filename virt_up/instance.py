@@ -774,7 +774,7 @@ class Instance:
                 '--run-command', f"useradd -m -s /bin/bash -p '{password}' {user}",
                 '--ssh-inject', f'{user}:file:{user_creds.ssh_identity}.pub',
                 '--run-command', 'mkdir -p /etc/sudoers.d',
-                '--write',  f'/etc/sudoers.d/99-sna-devlab:{user} ALL=(ALL) NOPASSWD: ALL',
+                '--write',  f'/etc/sudoers.d/99-virt-up:{user} ALL=(ALL) NOPASSWD: ALL',
                 *extra_args)
 
         # Setup virt-install options. Reuse the last mac address for this
