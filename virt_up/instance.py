@@ -27,6 +27,7 @@ import configparser
 import crypt
 import datetime
 import fcntl
+import getpass
 import glob
 import io
 import json
@@ -128,7 +129,7 @@ class Settings:
         self.os_variant = get('os-variant', '')
         self.arch = get('arch', '')
         self.pool = get('pool', 'default')
-        self.username = get('username', 'virt')
+        self.user = get('user', get('username', getpass.getuser()))
         self.image_format = get('image-format', 'qcow2')
         self.memory = get('memory', 512)
         self.vcpus = get('vcpus', 1)
@@ -737,7 +738,7 @@ class Instance:
 
         # Generate the ssh keys. Generate the passwords if not provided.
         if not user:
-            user = settings.username
+            user = settings.user
         root_creds = Creds('root', password=root_password)
         user_creds = Creds(user, password=password)
 

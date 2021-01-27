@@ -32,11 +32,11 @@ DATA = [
         'contents': """
 [common]
 pool = default
-username = virt
+# user =
 memory = 512
 vcpus = 1
 grahics = none
-dns-domain =
+# dns-domain =
 address-source = agent
 image-format = qcow2
 """
