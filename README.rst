@@ -238,14 +238,29 @@ See https://libosinfo.org/download for more information.
 Ubuntu installation notes
 -------------------------
 
-Linux images are not readable by regular users on recent Ubuntu distributions,
-which breaks the ability of libguestfs to modify guest images. Update the
-permissions with the `dpkg-statoverride` command to be able to run the
-libguestfs tools as a regular user:
+Linux images are not readable by regular users on Ubuntu distributions.  This
+breaks the ability of libguestfs to modify guest images unless running as root.
 
-    $ for image in /boot/vmlinu*; do sudo dpkg-statoverride --update --add root root 0644 $image || true; done
+Fix the kernel image permissions with the `dpkg-statoverride` command::
 
-You will need to run this *everytime* the kernel is updated.
+    $ sudo dpkg-statoverride --update --add root root 0644 /boot/vmlinuz-$(uname -r)
+
+To fix all of the installed images::
+
+    $ for i in /boot/vmlinuz-*; do sudo dpkg-statoverride --update --add root root 0644 $i; done
+
+To fix the permissions automatically with each new kernel version, create the file
+`/etc/kernel/postinst.d/statoverride`::
+
+    #!/bin/sh
+    version="$1"
+    # passing the kernel version is required
+    [ -z "${version}" ] && exit 0
+    dpkg-statoverride --update --add root root 0644 /boot/vmlinuz-${version}
+
+For more information see `Ubuntu bug 759725`_.
+
+.. _Ubuntu bug 759725: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/759725
 
 Xen
 ---
