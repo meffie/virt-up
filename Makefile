@@ -28,9 +28,10 @@ init.debian:
 
 .init:
 	test -d .venv || $(PYTHON3) -m venv .venv
-	. .venv/bin/activate && pip install -U wheel
-	. .venv/bin/activate && pip install -U pyflakes pylint pytest collective.checkdocs twine
-	. .venv/bin/activate && pip install -U -e .
+	. .venv/bin/activate && pip install -U pip wheel
+	. .venv/bin/activate && pip install wheel
+	. .venv/bin/activate && pip install pyflakes pylint pytest collective.checkdocs twine
+	. .venv/bin/activate && pip install -e .
 	touch .init
 
 init: .init

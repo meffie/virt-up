@@ -1,26 +1,33 @@
 from setuptools import setup
 import re
 
-try:
-    with open('virt_up/__init__.py') as fp:
-        __version__ = re.findall(r"__version__ = '(.*)'", fp.read())[0]
-except:
-    __version__ = 'unknown'
+name = 'virt_up'
+description = 'Create virtual machines quickly with virt-builder.'
+
+def find_version():
+    text = open('%s/__init__.py' % name).read()
+    return re.search(r"__version__\s*=\s*'(.*)'", text).group(1)
 
 setup(
-    name='virt_up',
-    version=__version__,
-    description='Create virtual machines quickly with virt-builder',
+    name=name,
+    version=find_version(),
+    description=description,
     long_description=open('README.rst').read(),
     author='Michael Meffie',
     author_email='mmeffie@sinenomine.net',
     license='BSD',
     url='https://github.com/meffie/virt-up',
-    packages=['virt_up'],
+    packages=[name],
     setup_requires=['wheel'],
-    install_requires=['sh', 'libvirt-python'],
+    install_requires=[
+        'Click',
+        'libvirt-python',
+        'sh',
+    ],
     entry_points={
-        'console_scripts': ['virt-up=virt_up.__main__:main'],
+        'console_scripts': [
+            'virt-up=%s.__main__:main' % name,
+        ],
     },
     classifiers=[
         'Development Status :: 4 - Beta',
