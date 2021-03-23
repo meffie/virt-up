@@ -26,7 +26,8 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'virt-up=%s.__main__:main' % name,
+            'virt-up=%s.cli:main' % name,
+            'vu=%s.cli:main' % name,
         ],
     },
     classifiers=[

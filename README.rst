@@ -28,61 +28,35 @@ storage pool.
 System requirements
 ===================
 
-* Python 3.6 or better
-* Local KVM hypervisor
-* Python libvirt package
-* ``libosinfo``, ``qemu-img``, ``virt-builder``, ``virt-sysprep``, ``virt-install``
+* Python 3.6+
+* qemu/kvm hypervisor
+* libvirt
+* libguestfs-tools (``virt-builder``, ``virt-sysprep``, ``virt-clone``)
+* libosinfo
+* qemu-utils (``qemu-img``)
+* virt-manager (``virt-install``)
 
 Usage
 =====
 
 ::
 
-    usage: virt-up [--name] <name> --template <template> [create-options]
-           virt-up [--name] <name> --login [--sftp|--command "<command>"]
-           virt-up [--name] <name> --playbook <playbook>
-           virt-up [--name] <name> --delete | --delete --all
-           virt-up --init [--force]
-           virt-up --list [--all]
-           virt-up --show-templates | --show-paths
+    Usage: virt-up [OPTIONS] COMMAND [ARGS]...
+           vu      [OPTIONS] COMMAND [ARGS]...
 
-    positional arguments:
-      <name>                instance name
+    Options:
+      --version  Show the version and exit.
+      --help     Show this message and exit.
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      --version             show program's version number and exit
-      --init                initialize configuration files
-      --list                list instances
-      --show-templates      show template definitions
-      --show-paths          show configuration and data paths
-      --delete              delete the instance
-      --login               login to a running instance
-      --playbook PLAYBOOK   run ansible playbook on instance
-      -t <template>, --template <template>
-                            template name (default: <name>)
-      --root-password <root-password>
-                            root password (default: random)
-      --user <user>         username (default: virt)
-      --password <password>
-                            password (default: random)
-      --size <size>         instance disk size (default: image size)
-      --memory <memory>     instance memory (default: 512)
-      --vcpus <vcpus>       instance vcpus (default: 1)
-      --graphics <graphics>
-                            instance graphics type (default: none)
-      --dns-domain <dns-domain>
-                            dns domain name
-      --sftp                --login with sftp
-      --command <command>   --login ssh command
-      --no-clone            build template instance only
-      --no-inventory        exclude instance from the virt-up ansible inventory
-                            file
-      --all                 include template instances
-      --yes                 answer yes to interactive questions
-      --quiet               show less output
-      --debug               show debug tracing
-      --force               overwrite files
+    Commands:
+      create          Create a new instance.
+      destroy         Destroy the instance.
+      init            Initialize configuration files.
+      list            List existing instances.
+      login           Login to an instance.
+      playbook        Run an ansible playbook on an instance.
+      show-paths      Show configuration and data paths.
+      show-templates  Show available template definitions.
 
 
 Configuration files
