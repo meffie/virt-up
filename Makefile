@@ -2,6 +2,7 @@
 
 PYTHON3=python3
 PYTHON=.venv/bin/python
+PIP=.venv/bin/pip
 PYFLAKES=.venv/bin/pyflakes
 PYTEST=.venv/bin/pytest
 TWINE=.venv/bin/twine
@@ -26,15 +27,15 @@ help:
 init.debian:
 	sudo apt-get install -y libvirt-dev
 
-.init:
+.venv/bin/activate:
 	test -d .venv || $(PYTHON3) -m venv .venv
-	. .venv/bin/activate && pip install -U pip wheel
-	. .venv/bin/activate && pip install wheel
-	. .venv/bin/activate && pip install pyflakes pylint pytest collective.checkdocs twine
-	. .venv/bin/activate && pip install -e .
-	touch .init
+	$(PIP) install -U pip
+	$(PIP) install wheel
+	$(PIP) install pyflakes pylint pytest collective.checkdocs twine
+	$(PIP) install -e .
+	touch .venv/bin/activate
 
-init: .init
+init: .venv/bin/activate
 
 lint: init
 	$(PYFLAKES) */*.py
@@ -76,4 +77,4 @@ clean:
 	rm -rf build dist .eggs virt_up.egg-info
 
 distclean: clean
-	rm -rf .init .venv
+	rm -rf .venv
