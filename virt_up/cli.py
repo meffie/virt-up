@@ -56,20 +56,14 @@ def create(name, prefix, template, **args):
     virt-builder template image, if the base instance does not exist. Clone
     the base instance to create the new named instance.
     """
-    from pprint import pprint as pp
-    pp(args)
     try:
         if virt_up.Instance.exists(name):
             click.echo(f"Instance '{name}' already exists.")
             instance = virt_up.Instance(name)
         else:
-            basename = prefix + template
-            if virt_up.Instance.exists(basename):
-                click.echo(f"Base instance '{basename}' already exists.")
-                base = virt_up.Instance(basename)
-            else:
-                click.echo(f"Creating base instance '{basename}' from template '{template}'.")
-                base = virt_up.Instance.build(basename, template, **args)
+            click.echo(f"Creating base instance from template '{template}'.")
+            base = virt_up.Instance.build(template, **args)
+            click.echo(f"Cloning instance '{name}' from base instance '{base.name}'.")
             instance = base.clone(name, **args)
         instance.wait_for_port(22)
         click.echo(f"Instance '{instance.name}' is up.")

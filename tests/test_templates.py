@@ -22,7 +22,7 @@ import pytest
 
 from virt_up.instance import Instance
 
-@pytest.mark.parametrize('name', [
+@pytest.mark.parametrize('template', [
     'generic-centos-7',
     'generic-centos-8',
     'generic-debian-9',
@@ -31,14 +31,17 @@ from virt_up.instance import Instance
     'generic-opensuse-42',
     'generic-ubuntu-18',
 ])
-def test_up(name):
-    options = {}
-    template = None
+def test_up(template):
+    options = {
+        'prefix': '__TEST__', # Do not clobber non-test base instances.
+    }
+    name = '__test__'
+    base = None
     instance = None
     try:
-        template = Instance.build(name, name, prefix='_TEST_TEMPLATE-', **options)
-        assert(template)
-        instance = template.clone(name, **options)
+        base = Instance.build(template, **options)
+        assert(base)
+        instance = base.clone(name, **options)
         assert(instance)
         address = instance.address()
         assert(address)
@@ -49,5 +52,5 @@ def test_up(name):
     finally:
         if instance:
             instance.delete()
-        if template:
-            template.delete()
+        if base:
+            base.delete()

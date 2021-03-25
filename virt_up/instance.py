@@ -76,6 +76,16 @@ def logerr(line):
     if line:
         log.error(line)
 
+def valid_name(name):
+    """
+    Returns true only if name contains a restricted set of characters.
+    """
+    safe = set(string.ascii_letters + string.digits + '-_.')
+    for c in name:
+        if c not in safe:
+            return False
+    return True
+
 # The sh debug logging swamps the log file, so back off.
 def _adjust_sh_log():
     logger = logging.getLogger(sh.__name__)
@@ -211,11 +221,13 @@ class Connection:
     def __enter__(self, uri=None):
         if uri is None:
             uri = libvirt_uri
+        log.debug(f"Opening libvirt connection: uri='{uri}'")
         self.conn = libvirt.open(uri)
         Connection.opens += 1
         return self.conn
 
     def __exit__(self, *exc):
+        log.debug("Closing libvirt connection")
         self.conn.close()
         Connection.closes += 1
 
@@ -689,9 +701,9 @@ class Instance:
 
     @classmethod
     def build(cls,
-              name,
-              template=None, # defaults to <name>
-              prefix='',
+              template,
+              target=None,
+              prefix='VIRTUP-',
               settings=None,
               root_password=None,
               user=None,
@@ -703,15 +715,21 @@ class Instance:
               dns_domain=None,
               **kwargs):
         """
-        Build an instance with virt-builder and virt-install.
+        Build a base instance with virt-builder and virt-install.
+        Returns the base instance if it already exists.
         """
         _adjust_sh_log()
-        if name is None:
-            raise ValueError('<name> is required.')
-        if not template:
-            template = name
 
-        name = f'{prefix}{name}'  # Optional instance name prefix.
+        if target:
+            name = target
+        else:
+            # template -> base instance name
+            safe = set(string.ascii_letters + string.digits + '_-.')
+            suffix = ''.join([c if c in safe else '-' for c in template])
+            name = f"{prefix}{suffix}"
+
+        if not valid_name(name):
+            raise ValueError(f"Base instance name '{name}' is not valid.")
 
         if cls.exists(name):
             log.info(f"Instance '{name}' already exists.")
@@ -719,6 +737,7 @@ class Instance:
 
         if settings is None:
             settings = Settings(template)
+
         maddrs = MacAddresses()
         path = query_storage_pool(settings.pool)
         if not os.access(path, os.R_OK | os.W_OK):
@@ -846,6 +865,9 @@ class Instance:
         """
         _adjust_sh_log()
         assert(target)
+        if not valid_name(target):
+            raise ValueError(f"target '{target}' contains invalid characters.")
+
         if self.exists(target):
             log.info(f"Target instance '{target}' already exists.")
             return Instance(target)

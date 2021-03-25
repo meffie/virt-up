@@ -69,25 +69,23 @@ def test_query_storage_pool_path():
 
 @pytest.mark.parametrize('template', ['generic-centos-8', 'generic-debian-10'])
 def test_build(config_files, template):
-    name = f'_test_virt_up_build_instance-{template}'
-    assert(not Instance.exists(name))
-    instance = Instance.build(name, template)
-    assert(Instance.exists(name))
+    instance = Instance.build(template, prefix='__TEST_BUILD__')
     assert(instance is not None)
-    assert(instance.name == name)
+    name = instance.name
     assert(instance.mac() is not None)
     assert(instance.domain.isActive())
     assert(instance.address() is not None)
     assert(instance.wait_for_port(22))
+    assert(Instance.exists(name))
     instance.delete()
     assert(not Instance.exists(name))
 
 def test_clone(config_files):
-    source_name = '_test_virt_up_instance_2'
     target_name = '_test_virt_up_instance_3'
 
-    source = Instance.build(source_name, 'generic-centos-8')
-    assert(Instance.exists(source_name))
+    source = Instance.build('generic-centos-8', prefix='__TEST_CLONE__')
+    assert(Instance.exists(source.name))
+    source_name = source.name
     address = source.address()
     assert(address is not None)
 
@@ -108,17 +106,17 @@ def test_clone(config_files):
 
 def test_address_source_arp(config_files):
     template = 'generic-centos-8'
-    name = f'_test_virt_up_instance_arp-{template}'
-
     settings = Settings(template)
     settings.address_source = 'arp'
 
-    instance = Instance.build(name, template=template, settings=settings)
-    assert(instance)
-    assert(instance.meta['address-source'] == 'arp')
-    assert(instance._arp_table())
-    instance.meta.pop('address', None) # Flush cached address.
-    address = instance.address()
-    assert(address)
-    # cleanup
-    instance.delete()
+    instance = Instance.build(template, prefix='__TEST__SOURCE_ARP__', settings=settings)
+    assert(instance is not None)
+    try:
+        assert(instance.meta['address-source'] == 'arp')
+        assert(instance._arp_table())
+        instance.meta.pop('address', None) # Flush cached address.
+        address = instance.address()
+        assert(address)
+    finally:
+        # cleanup
+        instance.delete()
