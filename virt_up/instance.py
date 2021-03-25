@@ -559,7 +559,9 @@ class Instance:
                 if line.startswith('IP address'):
                     continue
                 address, _, _, mac, _, _ = line.split()
-                arp[mac] = address
+                if not mac in arp:
+                    arp[mac] = []
+                arp[mac].append(address)
         return arp
 
     def _ping(self, address):
@@ -578,18 +580,18 @@ class Instance:
         """
         Attempt to retreive the instance address from the arp cache.
         """
-        address = None
         mac = self.mac()
         for retries in range(120, -1, -1):
             arp = self._arp_table()
-            address = arp.get(mac)
-            if address and self._ping(address):
-                break
+            addresses = arp.get(mac, [])
+            for address in addresses:
+                if self._ping(address):
+                    return address
             if retries > 0:
                 suffix = 'ies' if retries > 1 else 'y'
                 log.debug(f"Waiting for instance '{self.name}' address in arp cache; {retries} retr{suffix} left.")
                 time.sleep(2)
-        return address
+        return None
 
     def _address_from_dns(self):
         """
