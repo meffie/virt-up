@@ -1,0 +1,93 @@
+[{{ cookiecutter.template_name }}]
+{% if cookiecutter.os == 'centos8' -%}
+desc = {{ cookiecutter.desc | d('CentOS 8.2', True) }}
+os-version = centos-8.2
+os-type = linux
+os-variant = centos8
+arch = x86_64
+virt-builder-args = --firstboot-command "systemctl enable serial-getty@ttyS0.service"
+                    --firstboot-command "systemctl start serial-getty@ttyS0.service"
+                    --install "sudo,python3"
+                    --selinux-relabel
+virt-sysprep-args = --selinux-relabe
+{% elif cookiecutter.os == 'centos7' -%}
+desc = {{ cookiecutter.desc | d('CentOS 7', True) }}
+os-version = centos-7.8
+os-type = linux
+os-variant = centos7.0
+arch = x86_64
+virt-builder-args = --firstboot-command "systemctl enable serial-getty@ttyS0.service"
+                    --firstboot-command "systemctl start serial-getty@ttyS0.service"
+                    --install "sudo,python3"
+                    --selinux-relabel
+virt-sysprep-args = --selinux-relabel
+{% elif cookiecutter.os == 'fedora33' -%}
+desc = {{ cookiecutter.desc | d('Fedora33', True) }}
+os-version = fedora-33
+os-type = linux
+os-variant = fedora33
+arch = x86_64
+# --install 'qemu-guest-agent' hangs. fall back to arp for now.
+address-source = arp
+virt-builder-args = --firstboot-command "systemctl enable serial-getty@ttyS0.service"
+                    --firstboot-command "systemctl start serial-getty@ttyS0.service"
+                    --selinux-relabel
+virt-sysprep-args = --selinux-relabel
+{% elif cookiecutter.os == 'debian10' -%}
+desc = {{ cookiecutter.desc | d('Debian 10 (buster)', True) }}
+os-version = debian-10
+os-type = linux
+os-variant =  debian10
+arch = x86_64
+virt-builder-args = --install "sudo,qemu-guest-agent"
+                    --firstboot "{{ cookiecutter.scripts_path }}/fixup-network-interfaces.sh"
+virt-sysprep-args = --run-command "/usr/sbin/dpkg-reconfigure -f noninteractive openssh-server"
+{% elif cookiecutter.os == 'debian9' -%}
+desc = {{ cookiecutter.desc | d('Debian 9 (stretch)', True) }}
+os-version = debian-9
+os-type = linux
+os-variant =  debian9
+arch = x86_64
+virt-builder-args = --install "sudo,qemu-guest-agent"
+                    --firstboot "{{ cookiecutter.scripts_path }}/fixup-network-interfaces.sh"
+virt-sysprep-args = --run-command "/usr/sbin/dpkg-reconfigure -f noninteractive openssh-server"
+{% elif cookiecutter.os == 'ubuntu18' -%}
+desc = {{ cookiecutter.desc | d('Ubuntu 18.04', True) }}
+os-version = ubuntu-18.04
+os-type = linux
+os-variant =  ubuntu18.04
+arch = x86_64
+virt-builder-args = --install "sudo,policykit-1,qemu-guest-agent"
+                    --firstboot "{{ cookiecutter.scripts_path }}/fixup-netplan-netcfg.sh"
+virt-sysprep-args = --run-command "/usr/sbin/dpkg-reconfigure -f noninteractive openssh-server"
+virt-install-args = --channel unix,mode=bind,path=/var/lib/libvirt/qemu/guest01.agent,target_type=virtio,name=org.qemu.guest_agent.0
+{% elif cookiecutter.os == 'opensuse42' -%}
+desc = {{ cookiecutter.desc | d('openSUSE Leap 42.1', True) }}
+os-version = opensuse-42.1
+os-type = linux
+os-variant = opensuse42.1
+arch = x86_64
+virt-builder-args = --install "sudo,qemu-guest-agent"
+virt-sysprep-args =
+virt-install-args = --channel unix,mode=bind,path=/var/lib/libvirt/qemu/guest01.agent,target_type=virtio,name=org.qemu.guest_agent.0
+{% else -%}
+desc = {{ cookiecutter.desc }}
+os-version = {{ cookiecutter.os_version }}
+os-type = {{ cookiecutter.os_type }}
+os-variant = {{ cookiecutter.os_variant }}
+arch = {{ cookiecutter.arch }}
+virt_builder_args = {{ cookiecutter.virt_builder_args }}
+virt_sysprep_args = {{ cookiecutter.virt_sysprep_args }}
+virt_install_args = {{ cookiecutter.virt_install_args }}
+{% endif -%}
+{% if cookiecutter.pool %}pool = {{ cookiecutter.pool }}{% else %}# pool ={% endif %}
+{% if cookiecutter.user %}user = {{ cookiecutter.user }}{% else %}# user ={% endif %}
+{% if cookiecutter.image_format %}image_format = {{ cookiecutter.image_format }}{% else %}# image_format ={% endif %}
+{% if cookiecutter.memory %}memory = {{ cookiecutter.memory }}{% else %}# memory ={% endif %}
+{% if cookiecutter.vcpus %}vcpus = {{ cookiecutter.vcpus }}{% else %}# vcpus ={% endif %}
+{% if cookiecutter.graphics %}graphics = {{ cookiecutter.graphics }}{% else %}# graphics ={% endif %}
+{% if cookiecutter.dns_domain %}dns_domain = {{ cookiecutter.dns_domain }}{% else %}# dns_domain ={% endif %}
+{% if cookiecutter.address_source %}address_source = {{ cookiecutter.address }}{% else %}# address_source ={% endif %}
+{% if cookiecutter.cp_args %}cp_args = {{ cookiecutter.cp_args }}{% else %}# cp_args ={% endif %}
+{% if cookiecutter.template_playbook %}template_playbook = {{ cookiecutter.template_playbook }}{% else %}# template_playbook ={% endif %}
+{% if cookiecutter.instance_playbook %}instance_playbook = {{ cookiecutter.instance_playbook }}{% else %}# instance_playbook ={% endif %}

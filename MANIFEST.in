@@ -1,0 +1,2 @@
+graft virt_up
+global-exclude *.pyc *.pyo *.pyd __pycache__ *.so

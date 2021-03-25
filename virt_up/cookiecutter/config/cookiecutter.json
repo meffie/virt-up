@@ -1,0 +1,17 @@
+{
+    "config_parent": "OVERRIDE",
+    "config_directory": "virt-up",
+    "config_path": "{{ cookiecutter.config_parent }}/{{ cookiecutter.config_directory }}",
+    "scripts_path": "{{ cookiecutter.config_path }}/scripts",
+    "playbooks_path": "{{ cookiecutter.config_path }}/playbooks",
+    "settings_pool": "default",
+    "settings_user": "",
+    "settings_password_length": 12,
+    "settings_arch": "x86_64",
+    "settings_memory": 1024,
+    "settings_vcpus": 1,
+    "settings_graphics": "none",
+    "settings_dns_domain": "",
+    "settings_address_source": "agent",
+    "settings_image_format": "qcow2"
+}

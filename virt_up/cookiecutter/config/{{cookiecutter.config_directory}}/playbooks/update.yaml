@@ -1,0 +1,69 @@
+{% raw -%}
+---
+- name: Update
+  hosts: all
+  tasks:
+    - name: Update debian
+      when: ansible_os_family == 'Debian'
+      become: yes
+      block:
+        - name: Update all packages (debian)
+          apt:
+            name: "*"
+            state: latest
+
+        - name: Check if a reboot is required (debian)
+          register: reboot_required_file
+          stat:
+            path: /var/run/reboot-required
+            get_md5: no
+
+        - name: Reboot (debian)
+          reboot:
+            msg: "Reboot initiated by Ansible"
+            connect_timeout: 5
+            reboot_timeout: 600
+            pre_reboot_delay: 0
+            post_reboot_delay: 30
+            test_command: uptime
+          when: reboot_required_file.stat.exists
+
+        - name: Re-gather facts (debian)
+          setup:
+
+        - name: Install kernel headers (debian)
+          become: yes
+          apt:
+            state: present
+            name:
+              - linux-headers-{{ ansible_kernel }}
+
+    - name: Update redhat
+      when: ansible_os_family == 'RedHat'
+      become: yes
+      block:
+        - name: Update all packages (redhat)
+          yum:
+            state: latest
+            name: "*"
+          register: yum_update_results
+
+        - name: Reboot (redhat)
+          reboot:
+            msg: "Reboot initiated by Ansible"
+            connect_timeout: 5
+            reboot_timeout: 600
+            pre_reboot_delay: 0
+            post_reboot_delay: 30
+            test_command: uptime
+          when: yum_update_results.changed
+
+        - name: Re-gather facts (redhat)
+          setup:
+
+        - name: Install kernel headers (redhat)
+          become: yes
+          yum:
+            state: present
+            name: "kernel-devel-uname-r == {{ ansible_kernel }}"
+{% endraw -%}

@@ -1,0 +1,7 @@
+{% raw -%}
+---
+- name: Install OpenAFS development packages
+  hosts: all
+  roles:
+    - openafs_contrib.openafs.openafs_devel
+{%- endraw %}

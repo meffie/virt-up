@@ -21,7 +21,7 @@
 from virt_up.instance import Settings
 
 def test_template_settings(config_files):
-    name = 'generic-centos-8'
+    name = 'generic/centos8'
     settings = Settings(name)
     assert(settings.os_variant is not None)
     assert(settings.os_variant == 'centos8')

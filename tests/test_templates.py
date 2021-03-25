@@ -23,15 +23,16 @@ import pytest
 from virt_up.instance import Instance
 
 @pytest.mark.parametrize('template', [
-    'generic-centos-7',
-    'generic-centos-8',
-    'generic-debian-9',
-    'generic-debian-10',
-    'generic-fedora-32',
-    'generic-opensuse-42',
-    'generic-ubuntu-18',
+    'generic/centos7',
+    'generic/centos8',
+    'generic/debian9',
+    'generic/debian10',
+    'generic/fedora32',
+    'generic/fedora33',
+    'generic/opensuse42',
+    'generic/ubuntu18',
 ])
-def test_up(template):
+def test_up(config_files, template):
     options = {
         'prefix': '__TEST__', # Do not clobber non-test base instances.
     }

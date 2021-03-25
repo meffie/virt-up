@@ -6,7 +6,6 @@ PIP=.venv/bin/pip
 PYFLAKES=.venv/bin/pyflakes
 PYTEST=.venv/bin/pytest
 TWINE=.venv/bin/twine
-T=
 
 help:
 	@echo "usage: make <target>"
@@ -42,7 +41,7 @@ lint: init
 	$(PYTHON) setup.py checkdocs
 
 check test: init lint
-	$(PYTEST) $(T) tests
+	$(PYTEST) -v tests
 
 release: init
 	@if [ "x$(VERSION)" = "x" ]; then echo "usage: make release VERSION=<major>.<minor>.<patch>"; exit 1; fi

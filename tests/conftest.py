@@ -18,15 +18,26 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+import pathlib
 import pytest
 import virt_up.instance
-import virt_up.config
+from cookiecutter.main import cookiecutter
 
 @pytest.fixture
 def config_files(tmp_path):
     """
     Create config files in a temp directory.
     """
-    virt_up.config.create_files(tmp_path / 'virt-up', force=True)
-    virt_up.instance.virtup_config_home = tmp_path / 'virt-up'
+    # Lookup the path to our embedded cookiecutter template.
+    basedir = pathlib.Path(__file__).resolve().parent.parent
+    template = str(basedir / 'virt_up' / 'cookiecutter' / 'config')
+    cookiecutter(
+        template,
+        extra_context={'config_parent': str(tmp_path)},
+        output_dir=str(tmp_path),
+        no_input=True,
+        overwrite_if_exists=True,
+    )
+    # Inject the path to the temp config.
+    virt_up.instance.virtup_config_home = str(tmp_path / 'virt-up')
     return tmp_path
