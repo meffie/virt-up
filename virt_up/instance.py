@@ -889,6 +889,21 @@ class Instance:
         if not os.access(path, os.R_OK | os.W_OK):
             raise PermissionError(f"Read and write access is required for path '{path}'.")
 
+        # Get default values from the current template settings.
+        if not memory:
+            memory = settings.memory
+        if not vcpus:
+            vcpus = settings.vcpus
+        if not graphics:
+            graphics = settings.graphics
+        if dns_domain is None:
+            dns_domain = settings.dns_domain
+        if not hostname:
+            if dns_domain:
+                hostname = f'{target}.{dns_domain}'
+            else:
+                hostname = target
+
         # Clone the image.
         source_image = self.meta['disk']
         target_image = f'{path}/{target}.{settings.image_format}'
@@ -905,14 +920,6 @@ class Instance:
                 cp(*extra_args, source_image, target_image)
 
         # Setup virt-sysprep args.
-        if not hostname:
-            if dns_domain is None:
-                dns_domain = settings.dns_domain
-            if dns_domain:
-                hostname = f'{target}.{dns_domain}'
-            else:
-                hostname = target
-
         extra_args = settings.virt_sysprep_args
 
         with LockFile():
@@ -926,13 +933,6 @@ class Instance:
 
         # Setup virt-install options. Reuse the last mac address for this
         # instance so it will (hopefully) be assigned the same address.
-        if not memory:
-            memory = self.meta.get('memory', 512)
-        if not vcpus:
-            vcpus = self.meta.get('vcpus', 1)
-        if not graphics:
-            graphics = self.meta.get('graphics', 'none')
-
         optional_args = []
         mac = maddrs.lookup(target)
         if mac:
