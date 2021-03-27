@@ -140,6 +140,7 @@ class Settings:
         self.arch = get('arch', '')
         self.pool = get('pool', 'default')
         self.user = get('user', get('username', getpass.getuser()))
+        self.password_length = int(get('password-length', 24))
         self.image_format = get('image-format', 'qcow2')
         self.memory = get('memory', 512)
         self.vcpus = get('vcpus', 1)
@@ -244,7 +245,8 @@ class Creds:
         self.password = password
         self.ssh_identity = ssh_identity
 
-    def generate_password(self, length=24):
+    @classmethod
+    def generate_password(cls, length=24):
         """
         Generate a random password consisting of letters and digits.
         """
@@ -760,6 +762,10 @@ class Instance:
         # Generate the ssh keys. Generate the passwords if not provided.
         if not user:
             user = settings.user
+        if not root_password:
+            root_password = Creds.generate_password(settings.password_length)
+        if not password:
+            password = Creds.generate_password(settings.password_length)
         root_creds = Creds('root', password=root_password)
         user_creds = Creds(user, password=password)
 
