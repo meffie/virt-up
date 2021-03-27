@@ -272,6 +272,24 @@ def show_instance(name):
     instance = virt_up.Instance(name)
     click.echo(pprint.pformat(instance.meta))
 
+@show.command(name='ssh-config')
+@click.argument('name')
+def show_ssh_config(name):
+    """
+    Show instance ssh config.
+    """
+    if not virt_up.Instance.exists(name):
+        click.echo(f"Instance '{name}' not found.", err=True)
+        return 1
+    instance = virt_up.Instance(name)
+    click.echo(f"Host {name}")
+    click.echo(f"    Hostname {instance.meta['address']}")
+    click.echo(f"    User {instance.meta['user']['username']}")
+    click.echo(f"    IdentityFile {instance.meta['user']['ssh_identity']}")
+    ssh_options = instance.meta.get('ssh_options', {})
+    for k, v in ssh_options.items():
+        click.echo(f"    {k} {v}")
+
 @main.command()
 @click.argument('name')
 @click.option('-p', '--protocol', type=click.Choice(['ssh', 'sftp']), default='ssh')
