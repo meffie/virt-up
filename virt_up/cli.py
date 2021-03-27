@@ -235,7 +235,6 @@ def show():
     """
     Show configuration information.
     """
-
 @show.command(name='paths')
 def show_paths():
     """
@@ -249,6 +248,21 @@ def show_paths():
     click.echo(f'VIRTUP_DATA_HOME="{data_home}"')
     click.echo(f'VIRTUP_PLAYBOOKS="{playbooks}"')
     click.echo(f'VIRTUP_INVENTORY="{inventory}"')
+
+@show.command(name='playbooks')
+@click.option('--full-path', is_flag=True, help='Show full playbook file path.')
+def show_playbooks(full_path):
+    """
+    Show available playbooks.
+    """
+    config_home = pathlib.Path(virt_up.instance.virtup_config_home).resolve()
+    path = config_home / 'playbooks'
+    playbooks = list(path.glob('*.yml')) + list(path.glob('*.yaml'))
+    for playbook in sorted(playbooks):
+        if full_path:
+            click.echo(playbook)
+        else:
+            click.echo(playbook.name)
 
 @show.command(name='templates')
 def show_templates():
