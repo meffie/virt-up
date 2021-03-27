@@ -24,7 +24,6 @@ libvirt-based hypervisor.
 """
 
 import configparser
-import crypt
 import datetime
 import fcntl
 import getpass
@@ -769,10 +768,6 @@ class Instance:
         root_creds = Creds('root', password=root_password)
         user_creds = Creds(user, password=password)
 
-        # useradd requires a hashed password.
-        salt = crypt.mksalt(crypt.METHOD_SHA512)
-        password = crypt.crypt(user_creds.password, salt)
-
         # Setup virt-builder arguments.
         if memory is None:
             memory = settings.memory
@@ -799,10 +794,11 @@ class Instance:
                 '--hostname', hostname,
                 '--root-password', f'password:{root_creds.password}',
                 '--run-command', 'ssh-keygen -A',
-                '--run-command', f"useradd -m -s /bin/bash -p '{password}' {user}",
-                '--ssh-inject', f'{user}:file:{user_creds.ssh_identity}.pub',
+                '--run-command', f"useradd -m -s /bin/bash {user_creds.username}",
+                '--password', f"{user_creds.username}:password:{user_creds.password}",
+                '--ssh-inject', f'{user_creds.username}:file:{user_creds.ssh_identity}.pub',
                 '--run-command', 'mkdir -p /etc/sudoers.d',
-                '--write',  f'/etc/sudoers.d/99-virt-up:{user} ALL=(ALL) NOPASSWD: ALL',
+                '--write',  f'/etc/sudoers.d/99-virt-up:{user_creds.username} ALL=(ALL) NOPASSWD: ALL',
                 *extra_args)
 
         # Setup virt-install options. Reuse the last mac address for this
@@ -868,6 +864,9 @@ class Instance:
     def clone(self,
             target,
             settings=None,
+            user=None,
+            password=None,
+            root_password=None,
             hostname=None,
             memory=None,
             size=None,
@@ -936,6 +935,25 @@ class Instance:
                 extra_args = settings.cp_args
                 cp(*extra_args, source_image, target_image)
 
+        # Setup credentials for new instance.
+        if not root_password:
+            root_password = Creds.generate_password(settings.password_length)
+        root_creds = Creds('root', password=root_password)
+        if not user:
+            user = settings.user
+        if not password:
+            password = Creds.generate_password(settings.password_length)
+        user_creds = Creds(user, password=password)
+
+        # Args to setup user creds in cloned instance.
+        user_args = []
+        if user_creds.username != self.meta['user']['username']:
+            user_args.extend(['--run-command', f"useradd -m -s /bin/bash {user_creds.username}"])
+        user_args.extend([
+            '--password', f"{user_creds.username}:password:{user_creds.password}",
+            '--ssh-inject', f'{user_creds.username}:file:{user_creds.ssh_identity}.pub',
+        ])
+
         # Setup virt-sysprep args.
         extra_args = settings.virt_sysprep_args
 
@@ -946,6 +964,8 @@ class Instance:
                 '--add', target_image,
                 '--operations', 'defaults,-ssh-userdir',
                 '--hostname', hostname,
+                '--root-password', f"password:{root_creds.password}",
+                *user_args,
                 *extra_args)
 
         # Setup virt-install options. Reuse the last mac address for this
@@ -984,6 +1004,8 @@ class Instance:
         meta['memory'] = memory
         meta['vcpus'] = vcpus
         meta['graphics'] = graphics
+        meta['root'] = vars(root_creds)
+        meta['user'] = vars(user_creds)
         instance = Instance(target, meta=meta)
         maddrs.update(target, instance.mac())
         instance.address() # Wait for an address to be assigned.

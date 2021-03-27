@@ -58,6 +58,8 @@ def main(debug, quiet):
 @main.command()
 @click.argument('name')
 @click.option('-t', '--template', help='Template name. See "virt-up show templates" for available names.', default='default')
+@click.option('--user', help='Username (default: current user).')
+@click.option('--password', help='Password (default: random).')
 @click.option('--prefix', help='Base instance prefix.', default='VIRTUP-')
 @click.option('--size', help='Disk size and units, e.g. 10G')
 @click.option('--memory', help='Memory in MB.')
