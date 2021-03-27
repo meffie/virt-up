@@ -20,6 +20,7 @@
 
 import logging
 import pathlib
+import pprint
 import string
 import sys
 
@@ -55,7 +56,7 @@ def main(debug, quiet):
 
 @main.command()
 @click.argument('name')
-@click.option('-t', '--template', help='Template name. See show-templates for available names.', default='default')
+@click.option('-t', '--template', help='Template name. See "virt-up show templates" for available names.', default='default')
 @click.option('--prefix', help='Base instance prefix.', default='VIRTUP-')
 @click.option('--size', help='Disk size and units, e.g. 10G')
 @click.option('--memory', help='Memory in MB.')
@@ -258,6 +259,18 @@ def show_templates():
     click.echo(f"{heading[0]: <24} {heading[1]: <30} {heading[2]}")
     for s in virt_up.instance.Settings.all():
         click.echo(f"{s.template_name: <24} {s.desc: <30} {s.arch}")
+
+@show.command(name='instance')
+@click.argument('name')
+def show_instance(name):
+    """
+    Show instance metadata.
+    """
+    if not virt_up.Instance.exists(name):
+        click.echo(f"Instance '{name}' not found.", err=True)
+        return 1
+    instance = virt_up.Instance(name)
+    click.echo(pprint.pformat(instance.meta))
 
 @main.command()
 @click.argument('name')
