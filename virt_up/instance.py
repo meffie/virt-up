@@ -842,6 +842,17 @@ class Instance:
             'root': vars(root_creds),
             'user': vars(user_creds),
             'address-source': settings.address_source,
+            'ssh_options': {
+                'CheckHostIP': 'no',
+                'ControlMaster': 'auto',
+                'ControlPersist': '60s',
+                'ForwardX11': 'no',
+                'IdentitiesOnly': 'yes',
+                'LogLevel': 'ERROR',
+                'PasswordAuthentication': 'no',
+                'StrictHostKeyChecking': 'no',
+                'UserKnownHostsFile': '/dev/null',
+            },
         }
         if size:
             meta['size'] = size
@@ -989,16 +1000,6 @@ class Instance:
         Create an ansible inventory file for the cloned instances.
         """
         filename = f'{virtup_data_home}/inventory.yaml'
-        ssh_options = [
-            ('ControlMaster', 'auto'),
-            ('ControlPersist', '60s'),
-            ('ForwardX11', 'no'),
-            ('IdentitiesOnly', 'yes'),
-            ('LogLevel', 'ERROR'),
-            ('StrictHostKeyChecking', 'no'),
-            ('UserKnownHostsFile', '/dev/null'),
-        ]
-        ssh_common_args = ' '.join(['-o %s=%s' % x for x in ssh_options])
         clones = {}
         templates = {}
         for instance in Instance.all():
@@ -1013,7 +1014,7 @@ class Instance:
                 'ansible_port': '22',
                 'ansible_private_key_file': instance.meta['user']['ssh_identity'],
                 'ansible_connection': 'ssh',
-                'ansible_ssh_common_args': ssh_common_args,
+                'ansible_ssh_common_args': ' '.join(instance._ssh_option_args()),
             }
             if instance.is_clone():
                 clones[name] = host
@@ -1038,6 +1039,17 @@ class Instance:
                 for key, value in templates[name].items():
                     fp.write(f'          {key}: "{value}"\n')
 
+    def _ssh_option_args(self):
+        """
+        Get the list of ssh option arguments.
+        """
+        args = []
+        options = self.meta.get('ssh_options', {})
+        for k, v in options.items():
+            args.append('-o')
+            args.append(f'{k}={v}')
+        return args
+
     def login(self, mode='ssh', command=None):
         """
         ssh or stfp login to the instance.
@@ -1052,11 +1064,7 @@ class Instance:
         ssh_identity = self.meta['user']['ssh_identity']
         args = [
             '-i', ssh_identity,
-            '-o', 'PasswordAuthentication=no',
-            '-o', 'CheckHostIP=no',
-            '-o', 'UserKnownHostsFile=/dev/null',
-            '-o', 'StrictHostKeyChecking=no',
-            '-o', 'LogLevel=ERROR',
+            *self._ssh_option_args(),
             f'{user}@{address}',
         ]
         if command:
@@ -1081,11 +1089,7 @@ class Instance:
         command = shlex.join(args)
         ssh_args = [
             '-i', ssh_identity,
-            '-o', 'PasswordAuthentication=no',
-            '-o', 'CheckHostIP=no',
-            '-o', 'UserKnownHostsFile=/dev/null',
-            '-o', 'StrictHostKeyChecking=no',
-            '-o', 'LogLevel=ERROR',
+            *self._ssh_option_args(),
             f'{user}@{address}',
             command,
         ]
