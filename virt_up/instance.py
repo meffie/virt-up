@@ -257,7 +257,7 @@ class Creds:
         """
         Generate a ssh key pair for passwordless ssh login.
         """
-        ssh_identity = f'{virtup_data_home}/sshkeys/{name}'
+        ssh_identity = f'{virtup_data_home}/sshkeys/{name}/id_rsa'
         if os.path.exists(ssh_identity):
             log.debug(f"SSH key file '{ssh_identity}' already exists.")
             if not os.path.exists(f'{ssh_identity}.pub'):
@@ -792,11 +792,14 @@ class Instance:
                 '--output', image,
                 '--format', settings.image_format,
                 '--hostname', hostname,
-                '--root-password', f'password:{root_creds.password}',
                 '--run-command', 'ssh-keygen -A',
+                '--root-password', f'password:{root_creds.password}',
+                '--ssh-inject', f'{root_creds.username}:file:{root_creds.ssh_identity}.pub',
+                '--copy-in', f"{root_creds.ssh_identity}:/root/.ssh",
                 '--run-command', f"useradd -m -s /bin/bash {user_creds.username}",
                 '--password', f"{user_creds.username}:password:{user_creds.password}",
                 '--ssh-inject', f'{user_creds.username}:file:{user_creds.ssh_identity}.pub',
+                '--copy-in', f"{user_creds.ssh_identity}:/home/{user_creds.username}/.ssh",
                 '--run-command', 'mkdir -p /etc/sudoers.d',
                 '--write',  f'/etc/sudoers.d/99-virt-up:{user_creds.username} ALL=(ALL) NOPASSWD: ALL',
                 *extra_args)
@@ -952,6 +955,7 @@ class Instance:
         user_args.extend([
             '--password', f"{user_creds.username}:password:{user_creds.password}",
             '--ssh-inject', f'{user_creds.username}:file:{user_creds.ssh_identity}.pub',
+            '--copy-in', f"{user_creds.ssh_identity}:/home/{user_creds.username}/.ssh"
         ])
 
         # Setup virt-sysprep args.

@@ -29,9 +29,13 @@ from virt_up.instance import Creds
 from virt_up.instance import Settings
 from virt_up.instance import Instance
 
-def remove(path):
-    if os.path.exists(path):
+def remove_file(path):
+    if os.path.exists(path) and os.path.isfile(path):
         os.remove(path)
+
+def remove_dir(path):
+    if os.path.exists(path) and os.path.isdir(path):
+        os.removedirs(path)
 
 def test_mac_registry():
     name = '__test_virt_up_mac_addrs_1'
@@ -48,14 +52,16 @@ def test_mac_registry():
 
 def test_generate_ssh_keys():
     name = '_test_virt_up'
-    ssh_identity = f'{virtup_data_home}/sshkeys/{name}'
-    remove(ssh_identity)
-    remove(f'{ssh_identity}.pub')
+    ssh_identity = f'{virtup_data_home}/sshkeys/{name}/id_rsa'
+    remove_file(ssh_identity)
+    remove_file(f'{ssh_identity}.pub')
+    remove_dir(f'{virtup_data_home}/sshkeys/{name}')
     creds = Creds(name)
     assert(os.path.exists(creds.ssh_identity))
     assert(os.path.exists(f'{creds.ssh_identity}.pub'))
-    remove(creds.ssh_identity)
-    remove(f'{creds.ssh_identity}.pub')
+    remove_file(ssh_identity)
+    remove_file(f'{ssh_identity}.pub')
+    remove_dir(f'{virtup_data_home}/sshkeys/{name}')
 
 def test_exists_not_found():
     name = '_test_virt_up_this_does_not_exist'
