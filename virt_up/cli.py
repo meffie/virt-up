@@ -23,7 +23,6 @@ import logging
 import pathlib
 import pprint
 import string
-import sys
 
 import click
 import virt_up
@@ -56,53 +55,43 @@ def main(debug, quiet):
     logging.basicConfig(level=level, format='%(message)s')
 
 @main.command()
-@click.argument('name')
-@click.option('-t', '--template', help='Template name. See "virt-up show templates" for available names.', default='default')
+@click.argument('names', metavar='<name>', nargs=-1)
+@click.option('-t', '--template', help='Template name (default: default).', default='default')
 @click.option('--user', help='Username (default: current user).')
 @click.option('--password', help='Password (default: random).')
-@click.option('--prefix', help='Base instance prefix.', default='VIRTUP-')
-@click.option('--size', help='Disk size and units, e.g. 10G')
-@click.option('--memory', help='Memory in MB.')
+@click.option('--size', help='Disk size and units (example: 10G).')
+@click.option('--memory', help='Memory in MB (example: 2028).')
 @click.option('--vcpus', help='Number of virtual cpus.')
-@click.option('--graphics', help='Graphics type.')
-@click.option('--dns-domain', help='DNS domain name.')
+@click.option('--graphics', help='Graphics type (example: spice).')
+@click.option('--dns-domain', help='DNS domain name (example: example.com).')
 @click.option('--inventory/--no-inventory', help='Include/exclude from virt-up ansible inventory.', default=True)
-def create(name, prefix, template, **args):
+def create(names, template, **args):
     """
-    Create a new instance.
+    Create instances.
 
-    Start the instance when it already exists. Build a base instance from the
-    virt-builder template image, if the base instance does not exist. Clone
-    the base instance to create the new named instance.
+    Build a base instance then clone zero or more instances from the
+    base instance. Use 'virt-up show templates' to list available templates.
     """
-    try:
-        if virt_up.Instance.exists(name):
-            click.echo(f"Instance '{name}' already exists.")
-            instance = virt_up.Instance(name)
-        else:
-            click.echo(f"Creating base instance from template '{template}'.")
-            base = virt_up.Instance.build(template, **args)
-            click.echo(f"Cloning instance '{name}' from base instance '{base.name}'.")
-            instance = base.clone(name, **args)
+    base = virt_up.Instance.build(template, **args)
+    for name in names:
+        instance = base.clone(name, **args)
         instance.wait_for_port(22)
         click.echo(f"Instance '{instance.name}' is up.")
-    except ValueError as e:
-        click.echo('Error:' + str(e), err=True)
-        sys.exit(1)
-    except LookupError as e:
-        click.echo('Error: ' + str(e), err=True)
-        sys.exit(1)
 
 @main.command()
-@click.argument('name')
-def destroy(name):
+@click.argument('names', metavar='<name>', nargs=-1)
+def destroy(names):
     """
-    Destroy the instance.
+    Destroy instances.
+
+    Shutdown and delete the instances. Use virt-up list [--all]
+    to list instance names.
     """
-    if not virt_up.Instance.exists(name):
-        click.echo(f"Instance '{name}' not found.")
-    else:
-        virt_up.Instance(name).delete()
+    for name in names:
+        if not virt_up.Instance.exists(name):
+            click.echo(f"Instance '{name}' not found.")
+        else:
+            virt_up.Instance(name).delete()
 
 @main.group()
 def init():
@@ -227,7 +216,7 @@ def init_template(name, template_filename, force, **args):
 @click.option('-a', '--all', is_flag=True, help='List base instances too.')
 def list_(all):
     """
-    List existing instances.
+    List instances.
     """
     for instance in virt_up.Instance.all():
         if all or not instance.is_template():
