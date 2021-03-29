@@ -1,4 +1,4 @@
-.PHONY: help init lint test release sdist wheel rpm deb upload clean distclean
+.PHONY: help init lint test docs release sdist wheel rpm deb upload clean distclean
 
 PYTHON3=python3
 PYTHON=.venv/bin/python
@@ -14,6 +14,7 @@ help:
 	@echo "  init       create python virtual env"
 	@echo "  lint       run linter"
 	@echo "  test       run tests"
+	@echo "  docs       build documents"
 	@echo "  release    update version number and create a git tag"
 	@echo "  sdist      create source distribution"
 	@echo "  wheel      create wheel distribution"
@@ -31,6 +32,7 @@ init.debian:
 	$(PIP) install -U pip
 	$(PIP) install wheel
 	$(PIP) install pyflakes pylint pytest collective.checkdocs twine
+	$(PIP) install sphinx sphinx-rtd-theme
 	$(PIP) install -e .
 	touch .venv/bin/activate
 
@@ -42,6 +44,9 @@ lint: init
 
 check test: init lint
 	$(PYTEST) -v tests
+
+docs:
+	$(MAKE) --directory docs html
 
 release: init
 	@if [ "x$(VERSION)" = "x" ]; then echo "usage: make release VERSION=<major>.<minor>.<patch>"; exit 1; fi
@@ -71,6 +76,7 @@ upload: init sdist wheel
 	$(TWINE) upload dist/*
 
 clean:
+	$(MAKE) --directory docs clean
 	rm -rf virt_up/__pycache__
 	rm -rf .pytest_cache
 	rm -rf build dist .eggs virt_up.egg-info
