@@ -245,10 +245,12 @@ def show_paths():
     """
     config_home = pathlib.Path(virt_up.instance.virtup_config_home).resolve()
     data_home = pathlib.Path(virt_up.instance.virtup_data_home).resolve()
+    sshkeys = data_home / 'sshkeys'
     playbooks = config_home / 'playbooks'
     inventory = data_home / 'inventory.yaml'
     click.echo(f'VIRTUP_CONFIG_HOME="{config_home}"')
     click.echo(f'VIRTUP_DATA_HOME="{data_home}"')
+    click.echo(f'VIRTUP_SSHKEYS="{sshkeys}"')
     click.echo(f'VIRTUP_PLAYBOOKS="{playbooks}"')
     click.echo(f'VIRTUP_INVENTORY="{inventory}"')
 
