@@ -218,9 +218,11 @@ def list_(all):
     """
     List instances.
     """
+    names = []
     for instance in virt_up.Instance.all():
         if all or not instance.is_template():
-            click.echo(f'{instance.name}')
+            names.append(instance.name)
+    click.echo('\n'.join(sorted(names)))
 
 @main.group()
 def show():
