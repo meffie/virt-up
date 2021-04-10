@@ -20,6 +20,9 @@ The following fields are supported:
 **pool**
   The libvirt storage pool to write images. (default: ``default``)
 
+**network**
+  The libvirt network, for example ``bridge=br0``. (default: None)
+
 **username**
   The username of the user account created by **virt-up** when creating
   new template instances (default: ``virt``)

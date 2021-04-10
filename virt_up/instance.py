@@ -138,6 +138,7 @@ class Settings:
         self.os_variant = get('os-variant', '')
         self.arch = get('arch', '')
         self.pool = get('pool', 'default')
+        self.network = get('network', '')
         self.user = get('user', get('username', getpass.getuser()))
         self.password_length = int(get('password-length', 24))
         self.image_format = get('image-format', 'qcow2')
@@ -810,6 +811,8 @@ class Instance:
         mac = maddrs.lookup(name)
         if mac:
             optional_args.extend(['--mac', mac])
+        if settings.network:
+            optional_args.extend(['--network', settings.network])
         extra_args = settings.virt_install_args
         with LockFile():
             log.info(f"Importing instance '{name}'.")
@@ -978,6 +981,8 @@ class Instance:
         mac = maddrs.lookup(target)
         if mac:
             optional_args.extend(['--mac', mac])
+        if settings.network:
+            optional_args.extend(['--network', settings.network])
 
         extra_args = settings.virt_install_args
 

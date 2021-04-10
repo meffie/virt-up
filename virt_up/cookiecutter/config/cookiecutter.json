@@ -5,6 +5,7 @@
     "scripts_path": "{{ cookiecutter.config_path }}/scripts",
     "playbooks_path": "{{ cookiecutter.config_path }}/playbooks",
     "settings_pool": "default",
+    "settings_network": "",
     "settings_user": "",
     "settings_password_length": 12,
     "settings_arch": "x86_64",
