@@ -19,6 +19,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import os
+import sys
 import logging
 import pathlib
 import pprint
@@ -301,16 +302,37 @@ def show_ssh_config(name):
         click.echo(f"    {k} {v}")
 
 @main.command()
-@click.argument('name')
+@click.argument('names', metavar='[<name>]', nargs=-1) # Click does not support 0 or 1 arg.
 @click.option('-p', '--protocol', type=click.Choice(['ssh', 'sftp']), default='ssh')
-def login(name, protocol):
+def login(names, protocol):
     """
     Login to an instance.
     """
-    if not virt_up.Instance.exists(name):
-        click.echo(f"Instance '{name}' not found.", err=True)
+    if len(names) == 0:
+        names = []
+        for i in virt_up.Instance.all():
+            if not i.is_template():
+                names.append(i.name)
+        if len(names) == 0:
+            click.echo("No instances found.")
+            return 1
+        if len(names) > 1:
+            progname = pathlib.Path(sys.argv[0]).name
+            click.echo(f"Select which instance with: {progname} login <name>")
+            click.echo("Available instances:")
+            click.echo("%s" % "\n".join(sorted(names)))
+            return 1
+        name = names[0]
+    elif len(names) == 1:
+        name = names[0]
+        if not virt_up.Instance.exists(name):
+            click.echo(f"Instance '{name}' not found.", err=True)
+            return 1
+    if len(names) > 1:
+        click.echo("Too many names.")
         return 1
-    virt_up.Instance(name).login(mode=protocol)
+    instance = virt_up.Instance(name)
+    instance.login(mode=protocol)
 
 @main.command()
 @click.argument('name')
