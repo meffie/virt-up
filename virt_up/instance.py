@@ -24,10 +24,12 @@ libvirt-based hypervisor.
 """
 
 import configparser
+import contextlib
 import datetime
 import fcntl
 import getpass
 import glob
+import grp
 import io
 import json
 import logging
@@ -90,6 +92,22 @@ def _adjust_sh_log():
     logger = logging.getLogger(sh.__name__)
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.setLevel(logging.INFO)
+
+@contextlib.contextmanager
+def umask(new):
+    old = os.umask(new)
+    yield
+    os.umask(old)
+
+def chgrp(filepath, gid):
+    uid = os.stat(filepath).st_uid
+    os.chown(filepath, uid, gid)
+
+def change_group(path)
+    virtup_group = os.environ.get('VIRTUP_GROUP')
+    if virtup_group:
+        gi = grp.getgrnam(virtup_group)
+        chgrp(self.metafile, gi.gr_gid)
 
 # Commands
 cp = sh.Command('cp').bake(_out=logout, _err=logerr)
@@ -268,6 +286,11 @@ class Creds:
             rm_f(f'{ssh_identity}.pub')
             mkdir_p(os.path.dirname(ssh_identity))
             ssh_keygen('-t', 'rsa', '-N', '', '-f', ssh_identity)
+            if os.environ.get('VIRTUP_GROUP'):
+                change_group(ssh_identity)
+                os.chmod(ssh_identity, 0o440)
+                change_group(ssh_identity + '.pub')
+                os.chmod(ssh_identity + '.pub', 0o444)
         return ssh_identity
 
 class MacAddresses:
@@ -366,8 +389,10 @@ class Instance:
         log.debug(f"Writing metafile '{self.metafile}'.")
         mkdir_p(os.path.dirname(self.metafile))
         flags = os.O_CREAT | os.O_TRUNC | os.O_RDWR
-        with os.fdopen(os.open(self.metafile, flags, 0o600), 'w') as fp:
-            json.dump(self.meta, fp, indent=4)
+        with umask(0o002):
+            with os.fdopen(os.open(self.metafile, flags, 0o660), 'w') as fp:
+                json.dump(self.meta, fp, indent=4)
+        change_group(self.metafile)
 
     def is_clone(self):
         return 'cloned' in self.meta
@@ -1069,6 +1094,8 @@ class Instance:
                 fp.write(f'        {name}:\n')
                 for key, value in templates[name].items():
                     fp.write(f'          {key}: "{value}"\n')
+        if os.environ.get('VIRTUP_GROUP'):
+            change_group(filename)
 
     def _ssh_option_args(self):
         """
