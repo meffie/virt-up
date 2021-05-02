@@ -28,6 +28,7 @@ import datetime
 import fcntl
 import getpass
 import glob
+import grp
 import io
 import json
 import logging
@@ -36,6 +37,7 @@ import pprint
 import secrets
 import shlex
 import socket
+import stat
 import string
 import time
 import xml.etree.ElementTree
@@ -90,6 +92,22 @@ def _adjust_sh_log():
     logger = logging.getLogger(sh.__name__)
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.setLevel(logging.INFO)
+
+def change_group_access(path, group, read=True, write=True):
+    st = os.stat(path)
+    uid = st.st_uid
+    gid = grp.getgrnam(group).gr_gid
+    mode = st.st_mode
+    if read:
+        mode |= stat.S_IRGRP
+    else:
+        mode &= ~stat.S_IRGRP
+    if write:
+        mode |= stat.S_IWGRP
+    else:
+        mode &= ~stat.S_IWGRP
+    os.chown(path, uid, gid)
+    os.chmod(path, mode)
 
 # Commands
 cp = sh.Command('cp').bake(_out=logout, _err=logerr)
@@ -156,7 +174,13 @@ class Settings:
         log.debug("Settings: %s", pprint.pformat(vars(self)))
 
     @classmethod
-    def _load(self, pattern):
+    def option(cls, name):
+        settings = cls._load('settings.cfg')
+        options = settings.get('options', {})
+        return options.get(name)
+
+    @classmethod
+    def _load(cls, pattern):
         """
         Load settings from config files.
         """
@@ -268,6 +292,10 @@ class Creds:
             rm_f(f'{ssh_identity}.pub')
             mkdir_p(os.path.dirname(ssh_identity))
             ssh_keygen('-t', 'rsa', '-N', '', '-f', ssh_identity)
+            group = Settings.option('group')
+            if group:
+                change_group_access(ssh_identity, group, read=True, write=False)
+                change_group_access(f'{ssh_identity}.pub', group, read=True, write=True)
         return ssh_identity
 
 class MacAddresses:
@@ -295,6 +323,9 @@ class MacAddresses:
         mkdir_p(os.path.dirname(self.filename))
         with open(self.filename, 'w') as fp:
             json.dump(self.addrs, fp, indent=4)
+        group = Settings.option('group')
+        if group:
+            change_group_access(self.filename, group)
 
     def lookup(self, name):
         return self.addrs.get(name)
@@ -368,6 +399,9 @@ class Instance:
         flags = os.O_CREAT | os.O_TRUNC | os.O_RDWR
         with os.fdopen(os.open(self.metafile, flags, 0o600), 'w') as fp:
             json.dump(self.meta, fp, indent=4)
+        group = Settings.option('group')
+        if group:
+            change_group_access(self.metafile, group)
 
     def is_clone(self):
         return 'cloned' in self.meta
@@ -1069,6 +1103,9 @@ class Instance:
                 fp.write(f'        {name}:\n')
                 for key, value in templates[name].items():
                     fp.write(f'          {key}: "{value}"\n')
+        group = Settings.option('group')
+        if group:
+            change_group_access(filename, group)
 
     def _ssh_option_args(self):
         """
