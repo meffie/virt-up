@@ -13,4 +13,10 @@ with your package manager installation. The ``osinfo-db-import`` tool is
 provided by the package name ``osinfo-db-tools`` on ``yum`` and ``apt``
 managed systems.
 
+Example::
+
+    $ wget https://releases.pagure.org/libosinfo/osinfo-db-<VERSION>.tar.xz
+    $ sudo osinfo-db-import --local osinfo-db-<VERSION>.tar.xz
+
+
 See https://libosinfo.org/download for more information.
