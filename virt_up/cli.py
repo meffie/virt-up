@@ -25,6 +25,7 @@ import pathlib
 import pprint
 import string
 
+import sh
 import click
 import virt_up
 
@@ -54,6 +55,9 @@ def main(debug, quiet):
     else:
         level = logging.INFO
     logging.basicConfig(level=level, format='%(message)s')
+    # Adjust the sh logger level to avoid printing cmd output
+    # unless --debug is given.
+    logging.getLogger(sh.__name__).setLevel(level + 10)
 
 @main.command()
 @click.argument('names', metavar='<name>', nargs=-1)
