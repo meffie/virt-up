@@ -122,6 +122,7 @@ class Settings:
         # Load common settings.
         settings = self._load('settings.cfg')
         common = settings.get('common', {})
+        override = settings.get('override', {})
 
         # Load template specific settings.
         templates = self._load('templates.d/*.cfg')
@@ -130,7 +131,14 @@ class Settings:
 
         template = templates[name]
         def get(option, default):
-            return template.get(option, common.get(option, default))
+            optval = template.get(option, common.get(option, default))
+            override_option = name + '.' + option
+            if override_option in override:
+                try:
+                    optval = override[override_option].format(**{option:optval})
+                except KeyError:
+                    pass
+            return optval
 
         self.template_name = name
         self.desc = get('desc', '')

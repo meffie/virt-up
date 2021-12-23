@@ -13,9 +13,10 @@ Common Settings
 ---------------
 
 The ``settings.cfg`` file contains settings that are used when creating any
-virtual machine. The file should contain one section called ``[common]``.
+virtual machine. The file should contain one section called ``[common]`` and
+an optional section ``[overrride]``.
 
-The following fields are supported:
+The following fields are supported in the ``[common]`` section:
 
 **pool**
   The libvirt storage pool to write images. (default: ``default``)
@@ -67,6 +68,21 @@ The following fields are supported:
 
 These fields can be overridden by individual template definitions.
 
+The ``[override]`` section provides a method to modify of any setting on a per template definition basis.
+The override is applied after reading the template definition.
+
+The format is:
+**``template name``.``field name``**
+  The argument will replace a specific template's value for the field.  A simple method of subsitition
+  is available by inserting ``{fieldname}`` into the argument.
+
+  Example:
+     [override]
+     generic/centos8.virt-builder-args = {virt-builder-args}
+            --edit "/etc/default/grub:s/GRUB_CMDLINE_LINUX=\"/GRUB_CMDLINE_LINUX=\"debug\ /"
+            --run-command 'grub2-mkconfig -o /boot/grub2/grub.cfg'
+     generic/centos8.
+
 Template definitions
 --------------------
 
@@ -116,5 +132,9 @@ option. The following fields are supported:
 **instance-playbook**
   Optional ansible playbook to be executed on newly created instances. (default: None)
 
-In addition, the template configuration can override fields set in the ``common``
-section of the settings.cfg file.
+Summary of configuration processing order
+-----------------------------------------
+The ``[common]`` section of the ``settings.cfg`` provide system wide defaults.
+
+The definitions found in the template.d sub-directory are used and can be
+overriden by the statements found in the ``[override]`` section of the ``settings.cfg`` file.
