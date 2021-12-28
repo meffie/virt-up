@@ -96,9 +96,10 @@ regular user, be sure ``$HOME/.local/bin`` is included in your ``$PATH``::
 
     $ pip3 install virt-up
 
-Create the initial **virt-up** configuration files::
+Create **virt-up** setting and template files. The path of the configuration
+files can be found by running::
 
-    $ virt-up init config
+    $ virt-up show paths | grep CONFIG
 
 The per-user configuration files are written to the directory
 ``~/.config/virt-up/``. Set the ``VIRTUP_CONFIG_HOME`` environment variable to

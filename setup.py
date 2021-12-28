@@ -18,11 +18,9 @@ setup(
     license='BSD',
     url='https://github.com/meffie/virt-up',
     packages=[name],
-    include_package_data=True,
     setup_requires=['wheel'],
     install_requires=[
         'Click',
-        'cookiecutter',
         'libvirt-python',
         'sh',
     ],

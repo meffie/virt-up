@@ -14,7 +14,6 @@ Usage
     Commands:
       create    Create instances.
       destroy   Destroy instances.
-      init      Initialize configuration files.
       list      List instances.
       login     Login to an instance.
       playbook  Run an ansible playbook on an instance.
