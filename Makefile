@@ -15,6 +15,7 @@ help:
 	@echo "  lint       run linter"
 	@echo "  test       run tests"
 	@echo "  docs       build documents"
+	@echo "  preview    preview documents"
 	@echo "  release    update version number and create a git tag"
 	@echo "  sdist      create source distribution"
 	@echo "  wheel      create wheel distribution"
@@ -47,6 +48,9 @@ check test: init lint
 
 docs:
 	$(MAKE) --directory docs html
+
+preview: docs
+	xdg-open docs/build/html/index.html
 
 release: init
 	@if [ "x$(VERSION)" = "x" ]; then echo "usage: make release VERSION=<major>.<minor>.<patch>"; exit 1; fi
