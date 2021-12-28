@@ -30,7 +30,7 @@ def config_files(tmp_path):
     """
     # Lookup the path to our embedded cookiecutter template.
     basedir = pathlib.Path(__file__).resolve().parent.parent
-    template = str(basedir / 'virt_up' / 'cookiecutter' / 'config')
+    template = str(basedir / 'tests' / 'cookiecutter' / 'config')
     cookiecutter(
         template,
         extra_context={'config_parent': str(tmp_path)},

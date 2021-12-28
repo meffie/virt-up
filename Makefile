@@ -32,7 +32,7 @@ init.debian:
 	test -d .venv || $(PYTHON3) -m venv .venv
 	$(PIP) install -U pip
 	$(PIP) install wheel
-	$(PIP) install pyflakes pylint pytest collective.checkdocs twine
+	$(PIP) install pyflakes pylint pytest cookiecutter collective.checkdocs twine
 	$(PIP) install sphinx sphinx-rtd-theme
 	$(PIP) install -e .
 	touch .venv/bin/activate
