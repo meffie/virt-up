@@ -20,30 +20,64 @@ Installing KVM
 
 Install virtualization packages with **apt**::
 
-    # apt install qemu-system libvirt-clients libvirt-daemon-system
+    $ sudo apt install \
+        qemu-system libvirt-clients libvirt-daemon-system \
+        virtinst qemu-utils libguestfs-tools libvirt-dev \
+        osinfo-db-tools
 
-When installing on a server, you can add the ``--no-install-recommends`` apt
-option, to prevent the installation of extraneous graphical packages::
+Tip: Specify the ``--no-install-recommends`` apt option to avoid installing
+graphical packages when installing a server.
 
-    # apt install --no-install-recommends qemu-system libvirt-clients libvirt-daemon-system
+Add users to the **libvirt** group to grant them permission to manage virtual
+machines on the hypervisor::
 
-Install the **virt-install** and **libguestfs-tools** virtual machine management tools::
+    $ sudo useradd -a -G libvirt <username>
 
-    # apt install virtinst qemu-utils libguestfs-tools osinfo-db-tools
+This takes affect on your next login.
 
-The graphical **virt-manager** tool is useful to have on a desktop system. If the kvm hypervisor
-is running on a server, you can install **virt-manager** on your desktop and connect to the
-server::
+Download and install the most recent OS Info Database::
 
-    # apt install virt-manager
+    $ wget https://releases.pagure.org/libosinfo/osinfo-db-<VERSION>.tar.xz
+    $ sudo osinfo-db-import --local osinfo-db-<VERSION>.tar.xz
 
-Add users to the **libvirt** group to grant them permission to manage virtual machines::
+The graphical **virt-manager** tool is useful to have on a desktop system. If
+the kvm hypervisor is running on a server, you can install **virt-manager** on
+your desktop and connect to the server via ssh::
 
-    # adduser <username> libvirt
+    $ sudo apt install virt-manager   # on your desktop
 
-At this point, you should be able to login as a regular user and be able to
-create new guests with **virt-manager** and be able to manage the guests with
-**virsh**.
+Set your ``LIBVIRT_DEFAULT_URI`` environment variable if you are using a non
+default path.
+
+At this point, verify you are able to create new guests with **virt-manager**
+and be able to manage the guests with **virsh**.
+
+Linux kernel image permissions on Ubuntu
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Linux images are not readable by regular users on Ubuntu distributions.  This
+breaks the ability of libguestfs to modify guest images unless running as root.
+
+Fix the kernel image permissions with the `dpkg-statoverride` command::
+
+    $ sudo dpkg-statoverride --update --add root root 0644 /boot/vmlinuz-$(uname -r)
+
+To fix all of the installed images::
+
+    $ for i in /boot/vmlinuz-*; do sudo dpkg-statoverride --update --add root root 0644 $i; done
+
+To fix the permissions automatically with each new kernel version, create the
+file `/etc/kernel/postinst.d/statoverride` script. Be sure the ``statoverride``
+script is executable::
+
+    #!/bin/sh
+    version="$1"
+    [ -z "${version}" ] && exit 0
+    dpkg-statoverride --update --add root root 0644 /boot/vmlinuz-${version}
+
+For more information see `Ubuntu bug 759725`_.
+
+.. _Ubuntu bug 759725: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/759725
 
 Installing **virt-up**
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -74,29 +108,3 @@ Run ``virt-up show templates`` to see the available template names.
 
 Run ``virt-up create <name> --template <name>`` to create a virtual machine.
 
-Linux kernel image permissions on Ubuntu
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Linux images are not readable by regular users on Ubuntu distributions.  This
-breaks the ability of libguestfs to modify guest images unless running as root.
-
-Fix the kernel image permissions with the `dpkg-statoverride` command::
-
-    $ sudo dpkg-statoverride --update --add root root 0644 /boot/vmlinuz-$(uname -r)
-
-To fix all of the installed images::
-
-    $ for i in /boot/vmlinuz-*; do sudo dpkg-statoverride --update --add root root 0644 $i; done
-
-To fix the permissions automatically with each new kernel version, create the file
-`/etc/kernel/postinst.d/statoverride`::
-
-    #!/bin/sh
-    version="$1"
-    # passing the kernel version is required
-    [ -z "${version}" ] && exit 0
-    dpkg-statoverride --update --add root root 0644 /boot/vmlinuz-${version}
-
-For more information see `Ubuntu bug 759725`_.
-
-.. _Ubuntu bug 759725: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/759725
