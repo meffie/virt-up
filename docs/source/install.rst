@@ -28,10 +28,11 @@ Install virtualization packages with **apt**::
 Tip: Specify the ``--no-install-recommends`` apt option to avoid installing
 graphical packages when installing a server.
 
-Add users to the **libvirt** group to grant them permission to manage virtual
-machines on the hypervisor::
+Add users to the **libvirt** and **kvm** groups to grant them permission to
+manage virtual machines on the hypervisor::
 
     $ sudo useradd -a -G libvirt <username>
+    $ sudo useradd -a -G kvm <username>
 
 This takes affect on your next login.
 
